@@ -126,4 +126,27 @@ RSpec.describe Employee do
       expect(upcoming.current_revision).to be_nil
     end
   end
+
+  it "stores the bank account number without spaces and in uppercase" do
+    expect(build(:employee, bank_account_number: " de89 3704 0044 0532 ").bank_account_number).to eq("DE89370400440532")
+  end
+
+  it "accepts bank account numbers of 6 to 34 letters and digits" do
+    %w[123456 DE89370400440532013000 GB82WEST12345698765432].each do |number|
+      expect(build(:employee, bank_account_number: number)).to be_valid, "expected #{number} to be accepted"
+    end
+    [ "12345", "1" * 35, "1234-5678" ].each do |number|
+      employee = build(:employee, bank_account_number: number)
+      expect(employee).not_to be_valid, "expected #{number} to be rejected"
+      expect(employee.errors[:bank_account_number]).to include("must be 6 to 34 letters or digits")
+    end
+  end
+
+  it "can't change its join date once created" do
+    employee = create(:employee, joined_on: Date.new(2024, 1, 15))
+
+    expect(employee.update(joined_on: Date.new(2024, 2, 1))).to be(false)
+    expect(employee.errors[:joined_on]).to include("can't be changed")
+    expect(employee.reload.joined_on).to eq(Date.new(2024, 1, 15))
+  end
 end
