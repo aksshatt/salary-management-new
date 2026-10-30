@@ -8,6 +8,7 @@ import { formatMoney } from './format.js'
 import { insightsQueryString, parseInsightsQuery } from './insightsQuery.js'
 
 const CostDonut = lazy(() => import('./CostDonut.jsx'))
+const TrendCharts = lazy(() => import('./TrendCharts.jsx'))
 
 const usd = (amount) => formatMoney(amount === null ? null : { amount, currency_code: 'USD' })
 
@@ -28,6 +29,15 @@ export default function DashboardPage() {
   const queryString = insightsQueryString(query)
   const [insights, setInsights] = useState(null)
   const [error, setError] = useState(null)
+  const [trends, setTrends] = useState(null)
+  // Trends don't depend on the donut grouping, so switching it doesn't refetch them.
+  const trendsQueryString = insightsQueryString({ ...query, group_by: 'country' })
+
+  useEffect(() => {
+    apiFetch(`/insights/trends${trendsQueryString}`)
+      .then(setTrends)
+      .catch(() => setTrends(null))
+  }, [trendsQueryString])
   const [options, setOptions] = useState({ countries: [], departments: [], job_titles: [] })
 
   useEffect(() => {
@@ -99,6 +109,13 @@ export default function DashboardPage() {
           <CostDonut data={donutData(insights.breakdown.groups)} />
         </Suspense>
       </Card>
+      {trends && (
+        <div style={{ marginTop: 16 }}>
+          <Suspense fallback={<Spin />}>
+            <TrendCharts points={trends.points} />
+          </Suspense>
+        </div>
+      )}
     </>
   )
 }
