@@ -77,4 +77,28 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Employees' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Employees' }).getAttribute('href')).toBe('/employees')
   })
+
+  it("shows an employee's page at /employees/:id", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) => {
+        const body =
+          url === '/api/session'
+            ? { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' }
+            : {
+                employee: {
+                  id: 7, code: 'EMP-00007', name: 'Priya Nair', email: 'priya@acme.test',
+                  country: { id: 3, name: 'India', currency_code: 'INR' }, department: 'Sales',
+                  job_title: 'Account Manager', joined_on: '2024-01-15', terminated_on: null, status: 'active',
+                  bank_account: '••••3210', current_salary: null, salary_revisions: [],
+                },
+              }
+        return Promise.resolve(jsonResponse(200, body))
+      }),
+    )
+
+    renderAt('/employees/7')
+
+    expect(await screen.findByRole('heading', { name: 'Priya Nair' })).toBeTruthy()
+  })
 })

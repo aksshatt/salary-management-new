@@ -1,7 +1,8 @@
 import { Alert, Input, Select, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { apiFetch } from './api.js'
+import { formatMoney } from './format.js'
 import { employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
 
 const STATUS_TAGS = {
@@ -12,7 +13,7 @@ const STATUS_TAGS = {
 
 const COLUMNS = [
   { title: 'Code', dataIndex: 'code' },
-  { title: 'Name', dataIndex: 'name' },
+  { title: 'Name', dataIndex: 'name', render: (name, employee) => <Link to={`/employees/${employee.id}`}>{name}</Link> },
   { title: 'Country', dataIndex: ['country', 'name'] },
   { title: 'Department', dataIndex: 'department' },
   { title: 'Job title', dataIndex: 'job_title' },
@@ -22,6 +23,7 @@ const COLUMNS = [
     dataIndex: 'status',
     render: (status) => <Tag color={STATUS_TAGS[status].color}>{STATUS_TAGS[status].label}</Tag>,
   },
+  { title: 'Annual salary', dataIndex: 'current_salary', align: 'right', render: formatMoney },
   { title: 'Bank account', dataIndex: 'bank_account' },
 ]
 
@@ -41,9 +43,11 @@ export default function EmployeesPage() {
   }, [])
 
   useEffect(() => {
-    setError(null)
     apiFetch(`/employees${queryString}`)
-      .then(setData)
+      .then((result) => {
+        setData(result)
+        setError(null)
+      })
       .catch((e) => setError(`Could not load employees: ${e.message}`))
   }, [queryString])
 

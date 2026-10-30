@@ -23,6 +23,7 @@ const priya = {
   terminated_on: null,
   status: 'active',
   bank_account: '••••3210',
+  current_salary: { amount: '1320000.50', currency_code: 'INR' },
 }
 
 function stubApi({ employees = [priya], total = employees.length } = {}) {
@@ -65,7 +66,7 @@ describe('EmployeesPage', () => {
     renderAt('/employees?department=Sales&page=2')
 
     const row = (await screen.findByText('Priya Nair')).closest('tr')
-    for (const text of ['EMP-00007', 'India', 'Sales', 'Account Manager', 'Active', '••••3210']) {
+    for (const text of ['EMP-00007', 'India', 'Sales', 'Account Manager', 'Active', '••••3210', '₹1,320,000.50']) {
       expect(within(row).getByText(text)).toBeTruthy()
     }
     expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/employees?department=Sales&page=2')
@@ -138,5 +139,14 @@ describe('EmployeesPage', () => {
     renderAt('/employees')
 
     expect((await screen.findByRole('alert')).textContent).toContain('Could not load employees: Something broke')
+  })
+
+  it("links each name to the employee's page", async () => {
+    stubApi()
+    renderAt('/employees')
+
+    const link = await screen.findByRole('link', { name: 'Priya Nair' })
+
+    expect(link.getAttribute('href')).toBe('/employees/7')
   })
 })

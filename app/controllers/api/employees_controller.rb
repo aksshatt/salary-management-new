@@ -1,5 +1,7 @@
 module Api
   class EmployeesController < BaseController
+    include SalaryJson
+
     PER_PAGE = 25
 
     def index
@@ -8,14 +10,31 @@ module Api
       paged = employees.limit(PER_PAGE).offset((page - 1) * PER_PAGE)
 
       render json: {
-        employees: paged.map { |employee| employee_json(employee) },
-        total: employees.count,
+        employees: paged.map { |employee| employee_json(employee).merge(current_salary: current_salary_json(employee)) },
+        total: employees.unscope(:select).count,
         page: page,
         per_page: PER_PAGE
       }
     end
 
+    def show
+      employee = Employee.includes(:country).find(params[:id])
+      current = employee.current_revision
+      revisions = employee.salary_revisions.order(effective_on: :desc)
+
+      render json: {
+        employee: employee_json(employee).merge(
+          current_salary: current && money_json(current.amount, current.currency_code),
+          salary_revisions: revisions.map { |revision| revision_json(revision) }
+        )
+      }
+    end
+
     private
+      def current_salary_json(employee)
+        employee.current_salary_amount && money_json(employee.current_salary_amount, employee.current_salary_currency)
+      end
+
       def employee_json(employee)
         {
           id: employee.id,

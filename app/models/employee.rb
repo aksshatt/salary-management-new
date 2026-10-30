@@ -1,5 +1,6 @@
 class Employee < ApplicationRecord
   belongs_to :country
+  has_many :salary_revisions
 
   scope :active, -> {
     today = Date.current
@@ -21,6 +22,12 @@ class Employee < ApplicationRecord
     elsif terminated_on && terminated_on < today then "terminated"
     else "active"
     end
+  end
+
+  # The salary in effect today, or on the last working day for someone who left.
+  def current_revision
+    as_of = [ Date.current, terminated_on ].compact.min
+    salary_revisions.where(effective_on: ..as_of).order(:effective_on).last
   end
 
   # Only the payroll export may show the full number.
