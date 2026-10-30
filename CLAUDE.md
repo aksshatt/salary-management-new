@@ -41,7 +41,13 @@ Salary management web app for ACME's HR Manager: about 10,000 employees in multi
 - Filters and pagination live in the URL. No business calculations in the UI; the API does all the math.
 
 ## Commands
-To be added once the app is scaffolded.
+- Requires Ruby 3.4.2 and Node 22 (`frontend/.nvmrc`).
+- Setup: `bin/setup --skip-server` and `npm --prefix frontend ci`
+- Run: `bin/dev` (Rails on :3000, Vite on :5173 proxying `/api`)
+- Backend tests: `bundle exec rspec`. Frontend tests: `npm --prefix frontend test`
+- Lint: `bin/rubocop` and `npm --prefix frontend run lint`
+- All checks (RuboCop, bundler-audit, Brakeman, RSpec, frontend lint/tests/build): `bin/ci`
+- Production image: `docker build .` (builds the frontend into `public/`)
 
 ## Git
 - Conventional Commits, one line: `type(scope): message` (`feat`, `fix`, `test`, `refactor`, `docs`, `chore`, `ci`, `build`). No trailers.

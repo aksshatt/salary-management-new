@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Runs Rails on :3000 and Vite on :5173 (Vite proxies /api to Rails).
+set -e
+cd "$(dirname "$0")/.."
+
+npm --prefix frontend run dev &
+VITE_PID=$!
+trap 'kill $VITE_PID 2>/dev/null' EXIT
+
+bin/rails server "$@"
