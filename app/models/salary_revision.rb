@@ -1,0 +1,37 @@
+class SalaryRevision < ApplicationRecord
+  REASONS = %w[initial increment promotion correction other].freeze
+
+  belongs_to :employee
+
+  validates :amount, :effective_on, :reason, presence: true
+  validates :reason, inclusion: { in: REASONS }, allow_nil: true
+  validates :effective_on, uniqueness: { scope: :employee_id, message: "already has a revision on this date" }
+  validates :amount, numericality: { greater_than: 0, less_than_or_equal_to: 1_000_000_000 }, allow_nil: true
+
+  validate :amount_has_at_most_two_decimals
+  validate :effective_within_employment
+
+  before_create { self.currency_code = employee&.country&.currency_code }
+
+  # History must stay accurate: a change is a new revision, never an edit.
+  def readonly? = persisted?
+
+  private
+    # The decimal(12,2) column rounds on assignment, so check what was entered.
+    def amount_has_at_most_two_decimals
+      entered = BigDecimal(amount_before_type_cast.to_s, exception: false)
+      return if entered.nil? || entered == entered.round(2)
+
+      errors.add(:amount, "can have at most 2 decimal places")
+    end
+
+    def effective_within_employment
+      return if effective_on.nil? || employee.nil?
+
+      if effective_on < employee.joined_on
+        errors.add(:effective_on, "can't be before the join date (#{employee.joined_on.iso8601})")
+      elsif employee.terminated_on && effective_on > employee.terminated_on
+        errors.add(:effective_on, "can't be after the last working day (#{employee.terminated_on.iso8601})")
+      end
+    end
+end
