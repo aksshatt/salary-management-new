@@ -11,10 +11,14 @@ class Employee < ApplicationRecord
   scope :terminated, -> { where("terminated_on < ?", Date.current) }
 
   normalizes :email, with: ->(email) { email.strip.downcase }
+  normalizes :bank_account_number, with: ->(number) { number.gsub(/\s+/, "").upcase }
 
   validates :email, uniqueness: true
   validates :name, :email, :department, :job_title, :joined_on, :bank_account_number, presence: true
+  validates :bank_account_number, format: { with: /\A[A-Z0-9]{6,34}\z/, message: "must be 6 to 34 letters or digits" },
+    allow_blank: true
   validate :terminated_on_not_before_joined_on
+  validate :joined_on_unchanged, on: :update
 
   def status
     today = Date.current
@@ -41,5 +45,10 @@ class Employee < ApplicationRecord
       return if terminated_on.blank? || joined_on.blank? || terminated_on >= joined_on
 
       errors.add(:terminated_on, "can't be before the join date")
+    end
+
+    # The first salary revision is dated on the join date and can't change.
+    def joined_on_unchanged
+      errors.add(:joined_on, "can't be changed") if joined_on_changed?
     end
 end
