@@ -42,7 +42,8 @@ describe('LoginPage', () => {
     fillAndSubmit('hr@acme.test', 'secret')
     await waitFor(() => expect(onLogin).toHaveBeenCalledTimes(1))
 
-    // Ant Design ignores clicks on a button in its loading state.
-    expect(screen.getByRole('button', { name: /Log in/ }).className).toContain('ant-btn-loading')
+    // Ant Design ignores clicks on a button in its loading state. It applies
+    // that state in an effect, so wait for it rather than checking once.
+    await waitFor(() => expect(screen.getByRole('button', { name: /Log in/ }).className).toContain('ant-btn-loading'))
   })
 })
