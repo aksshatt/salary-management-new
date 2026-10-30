@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
+import './test/antdDom.js'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 
-beforeAll(() => {
-  window.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {} })
-})
 
 afterEach(() => {
   cleanup()
@@ -59,5 +57,24 @@ describe('App', () => {
     renderAt('/')
 
     expect(screen.getByLabelText('Loading')).toBeTruthy()
+  })
+
+  it('shows the employees page at /employees, with a link in the header', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) => {
+        const body = url === '/api/session'
+          ? { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' }
+          : url.startsWith('/api/filter_options')
+            ? { countries: [], departments: [], job_titles: [] }
+            : { employees: [], total: 0, page: 1, per_page: 25 }
+        return Promise.resolve(jsonResponse(200, body))
+      }),
+    )
+
+    renderAt('/employees')
+
+    expect(await screen.findByRole('heading', { name: 'Employees' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Employees' }).getAttribute('href')).toBe('/employees')
   })
 })

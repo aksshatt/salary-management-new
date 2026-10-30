@@ -1,0 +1,120 @@
+import { Alert, Input, Select, Space, Table, Tag, Typography } from 'antd'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+import { apiFetch } from './api.js'
+import { employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
+
+const STATUS_TAGS = {
+  active: { color: 'green', label: 'Active' },
+  upcoming: { color: 'blue', label: 'Upcoming' },
+  terminated: { color: 'default', label: 'Terminated' },
+}
+
+const COLUMNS = [
+  { title: 'Code', dataIndex: 'code' },
+  { title: 'Name', dataIndex: 'name' },
+  { title: 'Country', dataIndex: ['country', 'name'] },
+  { title: 'Department', dataIndex: 'department' },
+  { title: 'Job title', dataIndex: 'job_title' },
+  { title: 'Joined', dataIndex: 'joined_on' },
+  {
+    title: 'Status',
+    dataIndex: 'status',
+    render: (status) => <Tag color={STATUS_TAGS[status].color}>{STATUS_TAGS[status].label}</Tag>,
+  },
+  { title: 'Bank account', dataIndex: 'bank_account' },
+]
+
+export default function EmployeesPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const query = parseEmployeeQuery(location.search)
+  const queryString = employeeQueryString(query)
+  const [data, setData] = useState({ employees: [], total: 0 })
+  const [error, setError] = useState(null)
+  const [options, setOptions] = useState({ countries: [], departments: [], job_titles: [] })
+
+  useEffect(() => {
+    apiFetch('/filter_options')
+      .then(setOptions)
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    setError(null)
+    apiFetch(`/employees${queryString}`)
+      .then(setData)
+      .catch((e) => setError(`Could not load employees: ${e.message}`))
+  }, [queryString])
+
+  // Any filter change starts again from the first page.
+  function updateQuery(changes) {
+    navigate(`/employees${employeeQueryString({ ...query, ...changes, page: 1 })}`)
+  }
+
+  return (
+    <>
+      <Typography.Title level={3}>Employees</Typography.Title>
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Input.Search
+          key={query.q}
+          defaultValue={query.q}
+          placeholder="Search name or code"
+          allowClear
+          onSearch={(q) => updateQuery({ q })}
+          style={{ width: 260 }}
+        />
+        <Select
+          aria-label="Country"
+          placeholder="Country"
+          allowClear
+          value={query.country_id || undefined}
+          options={options.countries.map((country) => ({ value: String(country.id), label: country.name }))}
+          onChange={(value) => updateQuery({ country_id: value ?? '' })}
+          style={{ width: 180 }}
+        />
+        <Select
+          aria-label="Department"
+          placeholder="Department"
+          allowClear
+          value={query.department || undefined}
+          options={options.departments.map((department) => ({ value: department, label: department }))}
+          onChange={(value) => updateQuery({ department: value ?? '' })}
+          style={{ width: 180 }}
+        />
+        <Select
+          aria-label="Job title"
+          placeholder="Job title"
+          allowClear
+          value={query.job_title || undefined}
+          options={options.job_titles.map((title) => ({ value: title, label: title }))}
+          onChange={(value) => updateQuery({ job_title: value ?? '' })}
+          style={{ width: 220 }}
+        />
+        <Select
+          aria-label="Status"
+          placeholder="Status"
+          allowClear
+          value={query.status || undefined}
+          options={Object.entries(STATUS_TAGS).map(([value, { label }]) => ({ value, label }))}
+          onChange={(value) => updateQuery({ status: value ?? '' })}
+          style={{ width: 140 }}
+        />
+      </Space>
+      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
+      <Table
+        rowKey="id"
+        columns={COLUMNS}
+        dataSource={data.employees}
+        pagination={{
+          current: query.page,
+          pageSize: 25,
+          total: data.total,
+          showSizeChanger: false,
+          showTotal: (total) => `${total} employees`,
+          onChange: (page) => navigate(`/employees${employeeQueryString({ ...query, page })}`),
+        }}
+      />
+    </>
+  )
+}

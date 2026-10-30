@@ -26,4 +26,24 @@ RSpec.describe "db/seeds.rb" do
     expect { load Rails.root.join("db/seeds.rb") }.to output(/Skipping HR user: set HR_EMAIL and HR_PASSWORD/).to_stdout
     expect(User.count).to eq(0)
   end
+
+  it "creates the countries with their currencies once" do
+    2.times { run_seeds({}) }
+
+    expect(Country.order(:name).pluck(:name, :currency_code)).to eq(
+      [ [ "Brazil", "BRL" ], [ "Germany", "EUR" ], [ "India", "INR" ], [ "United Kingdom", "GBP" ], [ "United States", "USD" ] ]
+    )
+  end
+
+  it "creates the same 50 sample employees every time, only once" do
+    run_seeds({})
+    first_run = Employee.order(:id).pluck(:name, :department, :job_title, :joined_on)
+    run_seeds({})
+
+    expect(Employee.count).to eq(50)
+
+    Employee.delete_all
+    run_seeds({})
+    expect(Employee.order(:id).pluck(:name, :department, :job_title, :joined_on)).to eq(first_run)
+  end
 end

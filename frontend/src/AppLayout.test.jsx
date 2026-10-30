@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
+import './test/antdDom.js'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppLayout from './AppLayout.jsx'
 
-beforeAll(() => {
-  window.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {} })
-})
 
 afterEach(cleanup)
 
@@ -13,9 +12,11 @@ describe('AppLayout', () => {
   it('shows the logged-in email and logs out on click', () => {
     const onLogout = vi.fn()
     render(
-      <AppLayout user={{ email_address: 'hr@acme.test' }} onLogout={onLogout}>
-        <p>page</p>
-      </AppLayout>,
+      <MemoryRouter>
+        <AppLayout user={{ email_address: 'hr@acme.test' }} onLogout={onLogout}>
+          <p>page</p>
+        </AppLayout>
+      </MemoryRouter>,
     )
 
     expect(screen.getByText('hr@acme.test')).toBeTruthy()
