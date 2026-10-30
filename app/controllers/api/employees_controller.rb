@@ -1,5 +1,6 @@
 module Api
   class EmployeesController < BaseController
+    include EmployeeJson
     include SalaryJson
 
     PER_PAGE = 25
@@ -57,22 +58,6 @@ module Api
 
       def current_salary_json(employee)
         employee.current_salary_amount && money_json(employee.current_salary_amount, employee.current_salary_currency)
-      end
-
-      def employee_json(employee)
-        {
-          id: employee.id,
-          code: employee.code,
-          name: employee.name,
-          email: employee.email,
-          country: employee.country.slice(:id, :name, :currency_code),
-          department: employee.department,
-          job_title: employee.job_title,
-          joined_on: employee.joined_on,
-          terminated_on: employee.terminated_on,
-          status: employee.status,
-          bank_account: employee.masked_bank_account
-        }
       end
   end
 end

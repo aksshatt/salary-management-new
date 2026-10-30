@@ -17,7 +17,8 @@ module Api
           effective_on: revision.effective_on,
           amount: format_money(revision.amount),
           currency_code: revision.currency_code,
-          reason: revision.reason
+          reason: revision.reason,
+          never_applied: revision.never_applied?
         }
       end
   end

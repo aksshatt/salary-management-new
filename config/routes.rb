@@ -6,6 +6,7 @@ Rails.application.routes.draw do
     resource :session, only: %i[show create destroy]
     resources :employees, only: %i[index show create update] do
       resources :salary_revisions, only: %i[create]
+      resource :termination, only: %i[create]
     end
     resource :filter_options, only: %i[show]
   end
