@@ -4,6 +4,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     resource :session, only: %i[show create destroy]
+    resources :employees, only: %i[index]
   end
 
   root "frontend#show"
