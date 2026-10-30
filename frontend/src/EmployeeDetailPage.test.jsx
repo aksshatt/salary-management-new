@@ -33,6 +33,30 @@ function jsonResponse(status, body) {
   return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) }
 }
 
+const editOptions = {
+  countries: [
+    { id: 3, name: 'India', currency_code: 'INR' },
+    { id: 4, name: 'Germany', currency_code: 'EUR' },
+  ],
+  departments: [],
+  job_titles: [],
+}
+
+async function openEditDialog(patchResponse) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url, request) => {
+      if (url === '/api/filter_options') return Promise.resolve(jsonResponse(200, editOptions))
+      if (request?.method === 'PATCH') return Promise.resolve(patchResponse)
+      return Promise.resolve(jsonResponse(200, { employee }))
+    }),
+  )
+  renderAt('/employees/7')
+  await screen.findByRole('heading', { name: 'Priya Nair' })
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+  return screen.findByRole('dialog')
+}
+
 function renderAt(path) {
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -134,5 +158,53 @@ describe('EmployeeDetailPage', () => {
 
     expect(await within(dialog).findByText("can't be before the join date (2024-01-15)")).toBeTruthy()
     expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  it('edits the details, keeping the bank account number when left empty', async () => {
+    const options = { countries: [{ id: 3, name: 'India', currency_code: 'INR' }], departments: ['Sales'], job_titles: [] }
+    const fetch = vi.fn((url, request) => {
+      if (url === '/api/filter_options') return Promise.resolve(jsonResponse(200, options))
+      if (request?.method === 'PATCH') return Promise.resolve(jsonResponse(200, { employee: { ...employee, name: 'Priya N.' } }))
+      const renamed = fetch.mock.calls.some(([, r]) => r?.method === 'PATCH')
+      return Promise.resolve(jsonResponse(200, { employee: { ...employee, name: renamed ? 'Priya N.' : 'Priya Nair' } }))
+    })
+    vi.stubGlobal('fetch', fetch)
+    renderAt('/employees/7')
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByLabelText('Email').value).toBe('priya@acme.test')
+    expect(within(dialog).getByLabelText('Join date').disabled).toBe(true)
+    expect(within(dialog).getByLabelText('Bank account number').value).toBe('')
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Priya N.' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByRole('heading', { name: 'Priya N.' })).toBeTruthy()
+    const [url, request] = fetch.mock.calls.find(([, r]) => r?.method === 'PATCH')
+    expect(url).toBe('/api/employees/7')
+    expect(JSON.parse(request.body)).toEqual({
+      employee: { name: 'Priya N.', email: 'priya@acme.test', country_id: '3', department: 'Sales', job_title: 'Account Manager' },
+    })
+  })
+
+  it('warns that a new country only affects future salaries', async () => {
+    const dialog = await openEditDialog()
+
+    fireEvent.mouseDown(within(dialog).getByLabelText('Country'))
+    fireEvent.click(await screen.findByTitle('Germany'))
+
+    expect(
+      (await within(dialog).findByRole('alert')).textContent,
+    ).toContain('New salary revisions will be in EUR. Existing salaries stay in INR.')
+  })
+
+  it("shows the API's errors next to the fields when saving fails", async () => {
+    const dialog = await openEditDialog(jsonResponse(422, { errors: { email: ['has already been taken'] } }))
+
+    fireEvent.change(within(dialog).getByLabelText('Email'), { target: { value: 'taken@acme.test' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+    expect(await within(dialog).findByText('has already been taken')).toBeTruthy()
   })
 })

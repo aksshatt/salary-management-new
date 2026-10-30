@@ -26,8 +26,9 @@ const priya = {
   current_salary: { amount: '1320000.50', currency_code: 'INR' },
 }
 
-function stubApi({ employees = [priya], total = employees.length } = {}) {
-  const fetch = vi.fn((url) => {
+function stubApi({ employees = [priya], total = employees.length, create } = {}) {
+  const fetch = vi.fn((url, options) => {
+    if (options?.method === 'POST') return Promise.resolve(create)
     const body = url.startsWith('/api/filter_options')
       ? { countries: [{ id: 3, name: 'India', currency_code: 'INR' }], departments: ['Sales'], job_titles: ['Account Manager'] }
       : { employees, total, page: 1, per_page: 25 }
@@ -39,13 +40,19 @@ function stubApi({ employees = [priya], total = employees.length } = {}) {
 
 function CurrentLocation() {
   const location = useLocation()
-  return <output data-testid="location">{location.search}</output>
+  return (
+    <>
+      <output data-testid="location">{location.search}</output>
+      <output data-testid="path">{location.pathname}</output>
+    </>
+  )
 }
 
 // Opens an Ant Design select by its aria-label and picks an option.
-async function choose(label, option) {
-  fireEvent.mouseDown(screen.getByLabelText(label))
-  fireEvent.click(await screen.findByTitle(option))
+async function choose(label, option, container = screen) {
+  fireEvent.mouseDown(container.getByLabelText(label))
+  const options = await screen.findAllByTitle(option)
+  fireEvent.click(options[options.length - 1])
 }
 
 function renderAt(path) {
@@ -53,6 +60,7 @@ function renderAt(path) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/employees" element={<EmployeesPage />} />
+        <Route path="/employees/:id" element={<p>employee page</p>} />
       </Routes>
       <CurrentLocation />
     </MemoryRouter>,
@@ -148,5 +156,67 @@ describe('EmployeesPage', () => {
     const link = await screen.findByRole('link', { name: 'Priya Nair' })
 
     expect(link.getAttribute('href')).toBe('/employees/7')
+  })
+
+  it('adds an employee with an initial salary and opens their page', async () => {
+    const fetch = stubApi({
+      create: { ok: true, status: 201, json: () => Promise.resolve({ employee: { ...priya, id: 42 } }) },
+    })
+    renderAt('/employees')
+    await screen.findByText('Priya Nair')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add employee' }))
+    const dialog = await screen.findByRole('dialog')
+    const type = (label, value) => fireEvent.change(within(dialog).getByLabelText(label), { target: { value } })
+    type('Name', 'Asha Rao')
+    type('Email', 'asha@acme.test')
+    await choose('Country', 'India', within(dialog))
+    type('Department', 'Sales')
+    type('Job title', 'Account Executive')
+    type('Join date', '2026-11-02')
+    type('Bank account number', 'DE89 3704 0044')
+    // The currency in the label follows the chosen country.
+    fireEvent.change(await within(dialog).findByLabelText('Initial annual salary (INR)'), { target: { value: '1100000' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/employees/42'))
+    const [url, options] = fetch.mock.calls.find(([, o]) => o?.method === 'POST')
+    expect(url).toBe('/api/employees')
+    expect(JSON.parse(options.body)).toEqual({
+      employee: {
+        name: 'Asha Rao', email: 'asha@acme.test', country_id: '3', department: 'Sales',
+        job_title: 'Account Executive', joined_on: '2026-11-02', bank_account_number: 'DE89 3704 0044',
+      },
+      initial_salary: '1100000',
+    })
+  })
+
+  it("shows the API's errors next to the fields, including the salary", async () => {
+    stubApi({
+      create: {
+        ok: false,
+        status: 422,
+        json: () => Promise.resolve({ errors: { email: ['has already been taken'], initial_salary: ['must be less than or equal to 1000000000'] } }),
+      },
+    })
+    renderAt('/employees')
+    await screen.findByText('Priya Nair')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add employee' }))
+    const dialog = await screen.findByRole('dialog')
+    const type = (label, value) => fireEvent.change(within(dialog).getByLabelText(label), { target: { value } })
+    type('Name', 'Asha Rao')
+    type('Email', 'priya@acme.test')
+    await choose('Country', 'India', within(dialog))
+    type('Department', 'Sales')
+    type('Job title', 'Account Executive')
+    type('Join date', '2026-11-02')
+    type('Bank account number', '123456789')
+    fireEvent.change(await within(dialog).findByLabelText('Initial annual salary (INR)'), { target: { value: '2000000000' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add' }))
+
+    expect(await within(dialog).findByText('has already been taken')).toBeTruthy()
+    expect(within(dialog).getByText('must be less than or equal to 1000000000')).toBeTruthy()
+    expect(screen.getByTestId('path').textContent).toBe('/employees')
   })
 })
