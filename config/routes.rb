@@ -10,6 +10,7 @@ Rails.application.routes.draw do
     end
     resource :filter_options, only: %i[show]
     resources :exchange_rates, only: %i[index update], param: :currency_code
+    resource :insights, only: %i[show]
   end
 
   root "frontend#show"
