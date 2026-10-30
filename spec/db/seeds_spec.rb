@@ -38,12 +38,28 @@ RSpec.describe "db/seeds.rb" do
   it "creates the same 50 sample employees every time, only once" do
     run_seeds({})
     first_run = Employee.order(:id).pluck(:name, :department, :job_title, :joined_on)
+    first_salaries = SalaryRevision.order(:id).pluck(:effective_on, :amount, :reason)
     run_seeds({})
 
     expect(Employee.count).to eq(50)
 
+    SalaryRevision.delete_all
     Employee.delete_all
     run_seeds({})
     expect(Employee.order(:id).pluck(:name, :department, :job_title, :joined_on)).to eq(first_run)
+    expect(SalaryRevision.order(:id).pluck(:effective_on, :amount, :reason)).to eq(first_salaries)
+  end
+
+  it "gives every sample employee an initial salary on the join date and up to 3 later raises" do
+    run_seeds({})
+
+    Employee.includes(:salary_revisions, :country).find_each do |employee|
+      revisions = employee.salary_revisions.sort_by(&:effective_on)
+
+      expect(revisions.first).to have_attributes(reason: "initial", effective_on: employee.joined_on)
+      expect(revisions.size).to be_between(1, 4)
+      expect(revisions.map(&:currency_code).uniq).to eq([ employee.country.currency_code ])
+      expect(revisions.each_cons(2).all? { |a, b| b.amount > a.amount }).to be(true)
+    end
   end
 end
