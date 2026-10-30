@@ -1,16 +1,13 @@
-import { Spin, Typography } from 'antd'
+import { Spin } from 'antd'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import AppLayout from './AppLayout.jsx'
+import DashboardPage from './DashboardPage.jsx'
 import CurrenciesPage from './CurrenciesPage.jsx'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import { authRedirect } from './auth.js'
 import LoginPage from './LoginPage.jsx'
 import { useSession } from './useSession.js'
-
-function Home() {
-  return <Typography.Title level={3}>Welcome</Typography.Title>
-}
 
 export default function App() {
   const { status, user, login, logout } = useSession()
@@ -30,7 +27,7 @@ export default function App() {
         <Route path="/employees" element={<EmployeesPage />} />
         <Route path="/employees/:id" element={<EmployeeDetailPage />} />
         <Route path="/currencies" element={<CurrenciesPage />} />
-        <Route path="*" element={<Home />} />
+        <Route path="/" element={<DashboardPage />} />
       </Routes>
     </AppLayout>
   )

@@ -9,6 +9,9 @@ export default function AppLayout({ user, onLogout, children }) {
           <Typography.Text strong style={{ color: '#fff' }}>
             Salary Management
           </Typography.Text>
+          <Link to="/" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            Dashboard
+          </Link>
           <Link to="/employees" style={{ color: 'rgba(255,255,255,0.85)' }}>
             Employees
           </Link>
