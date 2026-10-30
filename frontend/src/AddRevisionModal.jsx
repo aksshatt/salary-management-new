@@ -1,6 +1,6 @@
 import { Form, Input, InputNumber, Modal, Select } from 'antd'
-import { ApiError, apiFetch } from './api.js'
-import { toFieldErrors } from './formErrors.js'
+import { apiFetch } from './api.js'
+import { showFieldErrors } from './formErrors.js'
 
 const REASON_OPTIONS = [
   { value: 'increment', label: 'Increment' },
@@ -16,11 +16,8 @@ export default function AddRevisionModal({ employee, open, onClose, onAdded }) {
     try {
       await apiFetch(`/employees/${employee.id}/salary_revisions`, { method: 'POST', body: { salary_revision: values } })
     } catch (error) {
-      if (error instanceof ApiError && error.status === 422) {
-        form.setFields(toFieldErrors(error.body.errors))
-        return
-      }
-      throw error
+      showFieldErrors(form, error)
+      return
     }
     form.resetFields()
     onAdded()

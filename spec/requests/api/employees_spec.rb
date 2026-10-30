@@ -264,4 +264,132 @@ RSpec.describe "API employees", type: :request do
       expect(json).to eq("error" => "Not found")
     end
   end
+
+  describe "POST /api/employees" do
+    let(:employee_params) do
+      {
+        employee: {
+          name: "Priya Nair", email: "priya@acme.test", country_id: india.id, department: "Sales",
+          job_title: "Account Manager", joined_on: "2026-11-02", bank_account_number: "1234 5678 9012"
+        },
+        initial_salary: "1200000"
+      }
+    end
+
+    it "returns 401 when not logged in" do
+      post "/api/employees", params: employee_params, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "creates the employee with their initial salary" do
+      log_in_as_hr
+
+      post "/api/employees", params: employee_params, headers: csrf_headers, as: :json
+
+      expect(response).to have_http_status(:created)
+      created = Employee.find(json["employee"]["id"])
+      expect(json["employee"]).to include("code" => created.code, "name" => "Priya Nair", "bank_account" => "••••9012")
+      expect(created.bank_account_number).to eq("123456789012")
+      expect(created.salary_revisions.pluck(:amount, :reason)).to eq([ [ BigDecimal("1200000"), "initial" ] ])
+    end
+
+    it "returns 422 with every field error and saves nothing" do
+      log_in_as_hr
+      employee_params[:employee].merge!(name: "", country_id: 0)
+      employee_params[:initial_salary] = ""
+
+      post "/api/employees", params: employee_params, headers: csrf_headers, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["errors"]).to eq(
+        "name" => [ "can't be blank" ], "country" => [ "must exist" ], "initial_salary" => [ "can't be blank" ]
+      )
+      expect(Employee.count).to eq(0)
+    end
+
+    it "ignores fields HR can't set, like the code or a last working day" do
+      log_in_as_hr
+      employee_params[:employee].merge!(code: "EMP-99999", terminated_on: "2026-12-31")
+
+      post "/api/employees", params: employee_params, headers: csrf_headers, as: :json
+
+      created = Employee.find(json["employee"]["id"])
+      expect(created.code).not_to eq("EMP-99999")
+      expect(created.terminated_on).to be_nil
+    end
+  end
+
+  describe "PATCH /api/employees/:id" do
+    let(:employee) do
+      create(:employee, name: "Priya Nair", email: "priya@acme.test", country: india, joined_on: Date.new(2024, 1, 15),
+        bank_account_number: "123456789012")
+    end
+    let(:path) { "/api/employees/#{employee.id}" }
+
+    it "returns 401 when not logged in" do
+      patch path, params: { employee: { name: "Priya N." } }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "updates the editable details" do
+      germany = create(:country, name: "Germany", currency_code: "EUR")
+      log_in_as_hr
+
+      patch path, params: { employee: { name: "Priya N.", email: "PNair@acme.test", country_id: germany.id,
+        department: "Partnerships", job_title: "Partner Manager", bank_account_number: "de89 3704 0044 0532" } },
+        headers: csrf_headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["employee"]).to include("name" => "Priya N.", "email" => "pnair@acme.test", "bank_account" => "••••0532")
+      expect(employee.reload).to have_attributes(country: germany, department: "Partnerships",
+        job_title: "Partner Manager", bank_account_number: "DE89370400440532")
+    end
+
+    it "keeps the bank account number when it's left out" do
+      log_in_as_hr
+
+      patch path, params: { employee: { name: "Priya N." } }, headers: csrf_headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(employee.reload).to have_attributes(name: "Priya N.", bank_account_number: "123456789012")
+    end
+
+    it "rejects a change to the join date" do
+      log_in_as_hr
+
+      patch path, params: { employee: { joined_on: "2024-02-01" } }, headers: csrf_headers, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["errors"]).to eq("joined_on" => [ "can't be changed" ])
+      expect(employee.reload.joined_on).to eq(Date.new(2024, 1, 15))
+    end
+
+    it "rejects an email used by another employee" do
+      create(:employee, email: "taken@acme.test")
+      log_in_as_hr
+
+      patch path, params: { employee: { email: "taken@acme.test" } }, headers: csrf_headers, as: :json
+
+      expect(json["errors"]).to eq("email" => [ "has already been taken" ])
+    end
+
+    it "returns 404 for an unknown employee" do
+      log_in_as_hr
+
+      patch "/api/employees/0", params: { employee: { name: "X" } }, headers: csrf_headers, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "requires a CSRF token" do
+      log_in_as_hr
+
+      patch path, params: { employee: { name: "X" } }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(employee.reload.name).to eq("Priya Nair")
+    end
+  end
 end

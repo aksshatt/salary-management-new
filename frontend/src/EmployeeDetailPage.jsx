@@ -1,6 +1,7 @@
-import { Button, Card, Descriptions, Result, Statistic, Table, Typography } from 'antd'
+import { Button, Card, Descriptions, Result, Space, Statistic, Table, Typography } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import AddRevisionModal from './AddRevisionModal.jsx'
+import EditEmployeeModal from './EditEmployeeModal.jsx'
 import { useParams } from 'react-router'
 import { apiFetch } from './api.js'
 import { formatMoney } from './format.js'
@@ -24,6 +25,7 @@ export default function EmployeeDetailPage() {
   const [employee, setEmployee] = useState(null)
   const [error, setError] = useState(null)
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   const load = useCallback(() => {
     apiFetch(`/employees/${id}`)
@@ -38,7 +40,10 @@ export default function EmployeeDetailPage() {
 
   return (
     <>
-      <Typography.Title level={3}>{employee.name}</Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3}>{employee.name}</Typography.Title>
+        <Button onClick={() => setEditing(true)}>Edit</Button>
+      </Space>
       <Descriptions bordered size="small" column={2} style={{ marginBottom: 24 }}>
         <Descriptions.Item label="Code">{employee.code}</Descriptions.Item>
         <Descriptions.Item label="Email">{employee.email}</Descriptions.Item>
@@ -66,6 +71,15 @@ export default function EmployeeDetailPage() {
         <Typography.Title level={4}>Salary history</Typography.Title>
         <Table rowKey="id" columns={REVISION_COLUMNS} dataSource={employee.salary_revisions} pagination={false} />
       </section>
+      <EditEmployeeModal
+        employee={employee}
+        open={editing}
+        onClose={() => setEditing(false)}
+        onSaved={() => {
+          setEditing(false)
+          load()
+        }}
+      />
       <AddRevisionModal
         employee={employee}
         open={adding}

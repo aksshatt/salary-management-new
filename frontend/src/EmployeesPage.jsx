@@ -1,6 +1,7 @@
-import { Alert, Input, Select, Space, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Input, Select, Space, Table, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
+import AddEmployeeModal from './AddEmployeeModal.jsx'
 import { apiFetch } from './api.js'
 import { formatMoney } from './format.js'
 import { employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
@@ -35,6 +36,7 @@ export default function EmployeesPage() {
   const [data, setData] = useState({ employees: [], total: 0 })
   const [error, setError] = useState(null)
   const [options, setOptions] = useState({ countries: [], departments: [], job_titles: [] })
+  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     apiFetch('/filter_options')
@@ -58,7 +60,12 @@ export default function EmployeesPage() {
 
   return (
     <>
-      <Typography.Title level={3}>Employees</Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3}>Employees</Typography.Title>
+        <Button type="primary" onClick={() => setAdding(true)}>
+          Add employee
+        </Button>
+      </Space>
       <Space wrap style={{ marginBottom: 16 }}>
         <Input.Search
           key={query.q}
@@ -118,6 +125,12 @@ export default function EmployeesPage() {
           showTotal: (total) => `${total} employees`,
           onChange: (page) => navigate(`/employees${employeeQueryString({ ...query, page })}`),
         }}
+      />
+      <AddEmployeeModal
+        open={adding}
+        options={options}
+        onClose={() => setAdding(false)}
+        onAdded={(employee) => navigate(`/employees/${employee.id}`)}
       />
     </>
   )
