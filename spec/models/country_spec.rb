@@ -26,4 +26,11 @@ RSpec.describe Country do
 
     expect { build(:country, name: "India").save(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
   end
+
+  it "needs an exchange rate for its currency so its salaries can be compared" do
+    country = Country.new(name: "Japan", currency_code: "JPY")
+
+    expect(country).not_to be_valid
+    expect(country.errors[:currency_code]).to include("has no exchange rate")
+  end
 end
