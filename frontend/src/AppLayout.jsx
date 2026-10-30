@@ -12,6 +12,9 @@ export default function AppLayout({ user, onLogout, children }) {
           <Link to="/employees" style={{ color: 'rgba(255,255,255,0.85)' }}>
             Employees
           </Link>
+          <Link to="/currencies" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            Currencies
+          </Link>
         </Space>
         <Space>
           <Typography.Text style={{ color: 'rgba(255,255,255,0.75)' }}>{user.email_address}</Typography.Text>

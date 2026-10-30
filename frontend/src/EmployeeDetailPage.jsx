@@ -4,7 +4,7 @@ import AddRevisionModal from './AddRevisionModal.jsx'
 import EditEmployeeModal from './EditEmployeeModal.jsx'
 import { useParams } from 'react-router'
 import { apiFetch } from './api.js'
-import { formatMoney } from './format.js'
+import { formatMoney, formatSalaryWithUsd } from './format.js'
 import StatusTag from './StatusTag.jsx'
 import TerminateModal from './TerminateModal.jsx'
 
@@ -89,7 +89,7 @@ export default function EmployeeDetailPage() {
       >
         <Statistic
           title="Current annual salary"
-          valueRender={() => <span data-testid="current-salary">{formatMoney(employee.current_salary)}</span>}
+          valueRender={() => <span data-testid="current-salary">{formatSalaryWithUsd(employee.current_salary)}</span>}
         />
       </Card>
       <section aria-label="Salary history">
