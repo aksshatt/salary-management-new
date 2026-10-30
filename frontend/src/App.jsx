@@ -1,6 +1,7 @@
 import { Spin, Typography } from 'antd'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import AppLayout from './AppLayout.jsx'
+import EmployeesPage from './EmployeesPage.jsx'
 import { authRedirect } from './auth.js'
 import LoginPage from './LoginPage.jsx'
 import { useSession } from './useSession.js'
@@ -24,6 +25,7 @@ export default function App() {
   return (
     <AppLayout user={user} onLogout={logout}>
       <Routes>
+        <Route path="/employees" element={<EmployeesPage />} />
         <Route path="*" element={<Home />} />
       </Routes>
     </AppLayout>
