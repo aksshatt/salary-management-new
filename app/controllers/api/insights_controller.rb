@@ -9,8 +9,8 @@ module Api
     end
 
     def show
-      month = params[:month].present? ? ReportMonth.parse(params[:month]) : ReportMonth.default
-      query = SalaryStatsQuery.new(as_of: month.as_of, **params.permit(:country_id, :department, :job_title).to_h.symbolize_keys)
+      month = report_month
+      query = SalaryStatsQuery.new(as_of: month.as_of, **filters)
       group_by = params[:group_by] == "department" ? :department : :country
 
       render json: {
@@ -21,7 +21,21 @@ module Api
       }
     end
 
+    def trends
+      points = SalaryTrendsQuery.new(as_of: report_month.as_of, **filters).points
+
+      render json: { points: points.map { |point| money_values(point) } }
+    end
+
     private
+      def report_month
+        params[:month].present? ? ReportMonth.parse(params[:month]) : ReportMonth.default
+      end
+
+      def filters
+        params.permit(:country_id, :department, :job_title).to_h.symbolize_keys
+      end
+
       def money_values(row)
         row.to_h { |key, value| [ key, key.in?(MONEY) && value ? format_money(value) : value ] }
       end
