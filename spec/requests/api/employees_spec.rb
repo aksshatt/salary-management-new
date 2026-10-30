@@ -1,7 +1,10 @@
 require "rails_helper"
 
 RSpec.describe "API employees", type: :request do
-  let(:india) { create(:country, name: "India", currency_code: "INR") }
+  let(:india) do
+    create(:exchange_rate, currency_code: "INR", units_per_usd: "83.25")
+    create(:country, name: "India", currency_code: "INR")
+  end
 
   def log_in_as_hr
     log_in(create(:user))
@@ -55,8 +58,8 @@ RSpec.describe "API employees", type: :request do
 
       salaries = json["employees"].to_h { |e| [ e["name"], e["current_salary"] ] }
       expect(salaries).to eq(
-        "Left" => { "amount" => "950.00", "currency_code" => "INR" },
-        "Paid" => { "amount" => "1100.00", "currency_code" => "INR" },
+        "Left" => { "amount" => "950.00", "currency_code" => "INR", "usd" => "11.41" },
+        "Paid" => { "amount" => "1100.00", "currency_code" => "INR", "usd" => "13.21" },
         "Starting" => nil
       )
     end
@@ -70,6 +73,17 @@ RSpec.describe "API employees", type: :request do
       get "/api/employees"
 
       expect(json["employees"].first["current_salary"]["amount"]).to eq("1000.00")
+    end
+
+    it "still shows the local salary when its currency has no exchange rate" do
+      employee = create(:employee, name: "No rate", country: india, joined_on: Date.new(2024, 1, 15))
+      create(:salary_revision, employee: employee, effective_on: Date.new(2024, 1, 15), amount: "1000")
+      ExchangeRate.where(currency_code: "INR").delete_all
+      log_in_as_hr
+
+      get "/api/employees"
+
+      expect(json["employees"].first["current_salary"]).to eq("amount" => "1000.00", "currency_code" => "INR", "usd" => nil)
     end
 
     it "runs the same number of queries for 3 or 30 employees" do
@@ -246,7 +260,7 @@ RSpec.describe "API employees", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(json["employee"]).to include("id" => employee.id, "code" => employee.code, "bank_account" => "••••3210")
-      expect(json["employee"]["current_salary"]).to eq("amount" => "1320000.50", "currency_code" => "INR")
+      expect(json["employee"]["current_salary"]).to eq("amount" => "1320000.50", "currency_code" => "INR", "usd" => "15855.86")
       expect(json["employee"]["salary_revisions"]).to eq([
         { "id" => future.id, "effective_on" => "2027-04-01", "amount" => "1400000.00", "currency_code" => "INR", "reason" => "promotion",
           "never_applied" => false },
@@ -268,6 +282,17 @@ RSpec.describe "API employees", type: :request do
 
       expect(json["employee"]["salary_revisions"].map { |r| [ r["effective_on"], r["never_applied"] ] })
         .to eq([ [ "2026-11-01", true ], [ "2024-01-15", false ] ])
+    end
+
+    it "shows the local salary without USD when its currency has no exchange rate" do
+      create(:salary_revision, employee: employee, effective_on: Date.new(2024, 1, 15), amount: "1000")
+      ExchangeRate.where(currency_code: "INR").delete_all
+      log_in_as_hr
+
+      get "/api/employees/#{employee.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(json["employee"]["current_salary"]).to eq("amount" => "1000.00", "currency_code" => "INR", "usd" => nil)
     end
 
     it "returns a JSON 404 for an unknown employee" do
