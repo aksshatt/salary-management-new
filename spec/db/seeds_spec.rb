@@ -62,4 +62,12 @@ RSpec.describe "db/seeds.rb" do
       expect(revisions.each_cons(2).all? { |a, b| b.amount > a.amount }).to be(true)
     end
   end
+
+  it "creates an exchange rate for every country's currency, with USD at 1" do
+    run_seeds({})
+
+    rates = ExchangeRate.pluck(:currency_code, :units_per_usd).to_h
+    expect(rates.keys).to match_array(Country.distinct.pluck(:currency_code))
+    expect(rates["USD"]).to eq(1)
+  end
 end

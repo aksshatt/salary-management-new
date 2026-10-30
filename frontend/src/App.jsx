@@ -1,6 +1,7 @@
 import { Spin, Typography } from 'antd'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import AppLayout from './AppLayout.jsx'
+import CurrenciesPage from './CurrenciesPage.jsx'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 import EmployeesPage from './EmployeesPage.jsx'
 import { authRedirect } from './auth.js'
@@ -28,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/employees" element={<EmployeesPage />} />
         <Route path="/employees/:id" element={<EmployeeDetailPage />} />
+        <Route path="/currencies" element={<CurrenciesPage />} />
         <Route path="*" element={<Home />} />
       </Routes>
     </AppLayout>

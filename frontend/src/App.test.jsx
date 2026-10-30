@@ -101,4 +101,20 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Priya Nair' })).toBeTruthy()
   })
+
+  it('shows the currencies page at /currencies, with a link in the header', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) =>
+        Promise.resolve(
+          jsonResponse(200, url === '/api/session' ? { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' } : { exchange_rates: [] }),
+        ),
+      ),
+    )
+
+    renderAt('/currencies')
+
+    expect(await screen.findByRole('heading', { name: 'Currencies' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Currencies' }).getAttribute('href')).toBe('/currencies')
+  })
 })

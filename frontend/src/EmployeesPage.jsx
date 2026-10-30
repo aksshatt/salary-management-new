@@ -21,6 +21,13 @@ const COLUMNS = [
     render: (status) => <StatusTag status={status} />,
   },
   { title: 'Annual salary', dataIndex: 'current_salary', align: 'right', render: formatMoney },
+  {
+    title: 'In USD',
+    dataIndex: 'current_salary',
+    key: 'usd',
+    align: 'right',
+    render: (salary) => (salary?.usd ? formatMoney({ amount: salary.usd, currency_code: 'USD' }) : '—'),
+  },
   { title: 'Bank account', dataIndex: 'bank_account' },
 ]
 

@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       resource :termination, only: %i[create]
     end
     resource :filter_options, only: %i[show]
+    resources :exchange_rates, only: %i[index update], param: :currency_code
   end
 
   root "frontend#show"

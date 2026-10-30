@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_30_031817) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_30_035912) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -44,6 +44,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_031817) do
     t.check_constraint "terminated_on IS NULL OR terminated_on >= joined_on", name: "terminated_on_after_joined_on"
   end
 
+  create_table "exchange_rates", force: :cascade do |t|
+    t.string "currency_code", null: false
+    t.decimal "units_per_usd", precision: 18, scale: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["currency_code"], name: "index_exchange_rates_on_currency_code", unique: true
+    t.check_constraint "units_per_usd > 0::numeric", name: "exchange_rates_positive"
+  end
+
   create_table "salary_revisions", force: :cascade do |t|
     t.bigint "employee_id", null: false
     t.decimal "amount", precision: 12, scale: 2, null: false
@@ -54,7 +63,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_031817) do
     t.datetime "updated_at", null: false
     t.index ["employee_id", "effective_on"], name: "index_salary_revisions_on_employee_id_and_effective_on", unique: true
     t.check_constraint "amount > 0::numeric AND amount <= 1000000000::numeric", name: "salary_revisions_amount_range"
-    t.check_constraint "reason::text = ANY (ARRAY['initial'::character varying, 'increment'::character varying, 'promotion'::character varying, 'correction'::character varying, 'other'::character varying]::text[])", name: "salary_revisions_reason"
+    t.check_constraint "reason::text = ANY (ARRAY['initial'::character varying::text, 'increment'::character varying::text, 'promotion'::character varying::text, 'correction'::character varying::text, 'other'::character varying::text])", name: "salary_revisions_reason"
   end
 
   create_table "sessions", force: :cascade do |t|

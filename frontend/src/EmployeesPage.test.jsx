@@ -23,7 +23,7 @@ const priya = {
   terminated_on: null,
   status: 'active',
   bank_account: '••••3210',
-  current_salary: { amount: '1320000.50', currency_code: 'INR' },
+  current_salary: { amount: '1320000.50', currency_code: 'INR', usd: '15855.86' },
 }
 
 function stubApi({ employees = [priya], total = employees.length, create } = {}) {
@@ -74,7 +74,7 @@ describe('EmployeesPage', () => {
     renderAt('/employees?department=Sales&page=2')
 
     const row = (await screen.findByText('Priya Nair')).closest('tr')
-    for (const text of ['EMP-00007', 'India', 'Sales', 'Account Manager', 'Active', '••••3210', '₹1,320,000.50']) {
+    for (const text of ['EMP-00007', 'India', 'Sales', 'Account Manager', 'Active', '••••3210', '₹1,320,000.50', '$15,855.86']) {
       expect(within(row).getByText(text)).toBeTruthy()
     }
     expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/employees?department=Sales&page=2')
