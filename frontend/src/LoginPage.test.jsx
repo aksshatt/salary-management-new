@@ -1,12 +1,9 @@
 // @vitest-environment jsdom
+import './test/antdDom.js'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import LoginPage from './LoginPage.jsx'
 
-beforeAll(() => {
-  // Ant Design reads matchMedia, which jsdom doesn't provide.
-  window.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {} })
-})
 
 afterEach(cleanup)
 
