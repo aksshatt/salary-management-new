@@ -10,6 +10,11 @@ CI.run do
 
   step "Tests: RSpec", "bundle exec rspec"
 
+  step "Frontend: Install", "npm --prefix frontend ci"
+  step "Frontend: Lint", "npm --prefix frontend run lint"
+  step "Frontend: Tests", "npm --prefix frontend test"
+  step "Frontend: Build", "npm --prefix frontend run build"
+
 
   # Optional: set a green GitHub commit status to unblock PR merge.
   # Requires the `gh` CLI and `gh extension install basecamp/gh-signoff`.
