@@ -8,6 +8,8 @@ import DashboardPage from './DashboardPage.jsx'
 // Charts draw on a canvas, which jsdom doesn't have; show their data instead.
 vi.mock('@ant-design/charts', () => ({
   Pie: ({ data }) => <output data-testid="donut">{JSON.stringify(data)}</output>,
+  Line: ({ data }) => <output data-testid="cost-trend">{JSON.stringify(data)}</output>,
+  Column: ({ data }) => <output data-testid="movement">{JSON.stringify(data)}</output>,
 }))
 
 afterEach(() => {
@@ -31,8 +33,19 @@ function jsonResponse(status, body) {
   return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) }
 }
 
+const trends = {
+  points: [
+    { month: '2026-08', as_of: '2026-08-31', monthly_cost: '12000.00', joiners: 1, leavers: 0 },
+    { month: '2026-09', as_of: '2026-09-30', monthly_cost: '12500.08', joiners: 2, leavers: 1 },
+  ],
+}
+
 function stubApi(response = jsonResponse(200, insights)) {
-  const fetch = vi.fn((url) => Promise.resolve(url.startsWith('/api/filter_options') ? jsonResponse(200, options) : response))
+  const fetch = vi.fn((url) => {
+    if (url.startsWith('/api/filter_options')) return Promise.resolve(jsonResponse(200, options))
+    if (url.startsWith('/api/insights/trends')) return Promise.resolve(jsonResponse(200, trends))
+    return Promise.resolve(response)
+  })
   vi.stubGlobal('fetch', fetch)
   return fetch
 }
@@ -124,5 +137,30 @@ describe('DashboardPage', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'Left out of the salary figures (no salary in USD): 1',
     )
+  })
+
+  it('loads the 12-month trends for the same month and filters and draws both charts', async () => {
+    const fetch = stubApi()
+
+    renderAt('/?month=2026-09&department=Sales&group_by=department')
+
+    expect(JSON.parse((await screen.findByTestId('cost-trend')).textContent)).toEqual([
+      { month: '2026-08', value: 12000 },
+      { month: '2026-09', value: 12500.08 },
+    ])
+    expect(JSON.parse(screen.getByTestId('movement').textContent)).toHaveLength(4)
+    expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/insights/trends?month=2026-09&department=Sales')
+  })
+
+  it("doesn't reload the trends when only the donut grouping changes", async () => {
+    const fetch = stubApi()
+    renderAt('/?month=2026-09')
+    await screen.findByTestId('cost-trend')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'By department' }))
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('?month=2026-09&group_by=department'))
+    await waitFor(() => expect(fetch.mock.calls.filter(([url]) => url.startsWith('/api/insights?')).length).toBe(2))
+
+    expect(fetch.mock.calls.filter(([url]) => url.startsWith('/api/insights/trends')).length).toBe(1)
   })
 })
