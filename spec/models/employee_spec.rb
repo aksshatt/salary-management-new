@@ -149,4 +149,31 @@ RSpec.describe Employee do
     expect(employee.errors[:joined_on]).to include("can't be changed")
     expect(employee.reload.joined_on).to eq(Date.new(2024, 1, 15))
   end
+
+  describe "#terminate" do
+    let(:employee) { create(:employee, joined_on: Date.new(2024, 1, 15)) }
+
+    it "sets the last working day, which can be the join date" do
+      expect(employee.terminate(on: Date.new(2024, 1, 15))).to be(true)
+      expect(employee.reload.terminated_on).to eq(Date.new(2024, 1, 15))
+    end
+
+    it "requires a date" do
+      expect(employee.terminate(on: nil)).to be(false)
+      expect(employee.errors[:terminated_on]).to include("can't be blank")
+    end
+
+    it "rejects a date before the join date" do
+      expect(employee.terminate(on: Date.new(2024, 1, 14))).to be(false)
+      expect(employee.reload.terminated_on).to be_nil
+    end
+
+    it "can't terminate twice or change the date" do
+      employee.terminate(on: Date.new(2025, 6, 30))
+
+      expect(employee.terminate(on: Date.new(2025, 7, 31))).to be(false)
+      expect(employee.errors[:terminated_on]).to include("already terminated")
+      expect(employee.reload.terminated_on).to eq(Date.new(2025, 6, 30))
+    end
+  end
 end
