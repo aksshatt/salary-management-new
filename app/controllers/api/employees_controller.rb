@@ -30,7 +30,31 @@ module Api
       }
     end
 
+    def create
+      result = Employees::Create.new(employee_params, initial_salary: params[:initial_salary]).call
+
+      if result.success?
+        render json: { employee: employee_json(result.employee) }, status: :created
+      else
+        render json: { errors: result.errors }, status: :unprocessable_content
+      end
+    end
+
+    def update
+      employee = Employee.find(params[:id])
+
+      if employee.update(employee_params)
+        render json: { employee: employee_json(employee) }
+      else
+        render json: { errors: employee.errors.to_hash }, status: :unprocessable_content
+      end
+    end
+
     private
+      def employee_params
+        params.expect(employee: %i[name email country_id department job_title joined_on bank_account_number])
+      end
+
       def current_salary_json(employee)
         employee.current_salary_amount && money_json(employee.current_salary_amount, employee.current_salary_currency)
       end
