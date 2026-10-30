@@ -10,6 +10,11 @@ else
   puts "Skipping HR user: set HR_EMAIL and HR_PASSWORD"
 end
 
+# Approximate rates (units per 1 USD); HR keeps them up to date in the app.
+{ "BRL" => "5.05", "EUR" => "0.92", "GBP" => "0.79", "INR" => "83.25", "USD" => "1" }.each do |currency_code, units|
+  ExchangeRate.find_or_create_by!(currency_code:) { |rate| rate.units_per_usd = units }
+end
+
 countries = {
   "Brazil" => "BRL",
   "Germany" => "EUR",
