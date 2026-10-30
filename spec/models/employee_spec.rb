@@ -99,4 +99,31 @@ RSpec.describe Employee do
 
     expect(indexed).to include([ "country_id" ], [ "department" ], [ "job_title" ], [ "joined_on" ], [ "terminated_on" ], [ "name" ])
   end
+
+  describe "#current_revision" do
+    let(:employee) { create(:employee, joined_on: Date.new(2024, 1, 15)) }
+    let!(:initial) { create(:salary_revision, employee: employee, effective_on: Date.new(2024, 1, 15), amount: 1000) }
+    let!(:increment) { create(:salary_revision, employee: employee, effective_on: Date.new(2025, 4, 1), amount: 1100, reason: "increment") }
+
+    around { |example| travel_to(Date.new(2026, 10, 15)) { example.run } }
+
+    it "is the latest revision effective on or before today, ignoring future ones" do
+      create(:salary_revision, employee: employee, effective_on: Date.new(2026, 10, 16), amount: 1200, reason: "increment")
+
+      expect(employee.current_revision).to eq(increment)
+    end
+
+    it "is the revision in effect on the last working day for someone who has left" do
+      employee.update!(terminated_on: Date.new(2025, 3, 31))
+
+      expect(employee.current_revision).to eq(initial)
+    end
+
+    it "is nil when no revision has taken effect yet" do
+      upcoming = create(:employee, joined_on: Date.new(2026, 11, 1))
+      create(:salary_revision, employee: upcoming, effective_on: Date.new(2026, 11, 1))
+
+      expect(upcoming.current_revision).to be_nil
+    end
+  end
 end
