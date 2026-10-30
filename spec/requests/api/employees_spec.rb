@@ -35,16 +35,48 @@ RSpec.describe "API employees", type: :request do
         "id" => zoe.id, "code" => zoe.code, "name" => "Zoe Park", "email" => "zoe@acme.test",
         "country" => { "id" => india.id, "name" => "India", "currency_code" => "INR" },
         "department" => "Sales", "job_title" => "Account Manager", "joined_on" => "2025-01-06",
-        "terminated_on" => nil, "status" => "active", "bank_account" => "••••3210"
+        "terminated_on" => nil, "status" => "active", "bank_account" => "••••3210", "current_salary" => nil
       )
       expect(response.body).not_to include("9876543210")
     end
 
+    it "includes each employee's current salary, or null when none has taken effect" do
+      paid = create(:employee, name: "Paid", country: india, joined_on: Date.new(2024, 1, 15))
+      create(:salary_revision, employee: paid, effective_on: Date.new(2024, 1, 15), amount: "1000")
+      create(:salary_revision, employee: paid, effective_on: Date.new(2025, 4, 1), amount: "1100", reason: "increment")
+      create(:salary_revision, employee: paid, effective_on: Date.new(2027, 1, 1), amount: "1200", reason: "increment")
+      left = create(:employee, name: "Left", country: india, joined_on: Date.new(2024, 1, 15), terminated_on: Date.new(2025, 3, 31))
+      create(:salary_revision, employee: left, effective_on: Date.new(2024, 1, 15), amount: "900")
+      create(:salary_revision, employee: left, effective_on: Date.new(2025, 3, 31), amount: "950", reason: "correction")
+      create(:employee, name: "Starting", joined_on: Date.new(2026, 11, 1))
+      log_in_as_hr
+
+      get "/api/employees"
+
+      salaries = json["employees"].to_h { |e| [ e["name"], e["current_salary"] ] }
+      expect(salaries).to eq(
+        "Left" => { "amount" => "950.00", "currency_code" => "INR" },
+        "Paid" => { "amount" => "1100.00", "currency_code" => "INR" },
+        "Starting" => nil
+      )
+    end
+
+    it "uses the app's date, not the database clock, for the current salary" do
+      employee = create(:employee, name: "Tomorrow's raise", joined_on: Date.new(2024, 1, 15))
+      create(:salary_revision, employee: employee, effective_on: Date.new(2024, 1, 15), amount: "1000")
+      create(:salary_revision, employee: employee, effective_on: Date.new(2026, 10, 16), amount: "2000", reason: "increment")
+      log_in_as_hr
+
+      get "/api/employees"
+
+      expect(json["employees"].first["current_salary"]["amount"]).to eq("1000.00")
+    end
+
     it "runs the same number of queries for 3 or 30 employees" do
       log_in_as_hr
-      create_list(:employee, 3)
+      create_list(:salary_revision, 3)
       few = count_queries { get "/api/employees" }
-      create_list(:employee, 27)
+      create_list(:salary_revision, 27)
       many = count_queries { get "/api/employees" }
 
       expect(many).to eq(few)
@@ -188,6 +220,48 @@ RSpec.describe "API employees", type: :request do
       get "/api/employees", params: { q: "priya", country_id: india.id, department: "Sales" }
 
       expect(json["employees"].map { |e| e["name"] }).to eq([ "Priya Sales" ])
+    end
+  end
+
+  describe "GET /api/employees/:id" do
+    around { |example| travel_to(Date.new(2026, 10, 15)) { example.run } }
+
+    let(:employee) { create(:employee, country: india, joined_on: Date.new(2024, 1, 15), bank_account_number: "9876543210") }
+
+    it "returns 401 when not logged in" do
+      get "/api/employees/#{employee.id}"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "returns the employee with current salary and revision history, newest first" do
+      initial = create(:salary_revision, employee: employee, effective_on: Date.new(2024, 1, 15), amount: "1200000")
+      increment = create(:salary_revision, employee: employee, effective_on: Date.new(2025, 4, 1), amount: "1320000.50",
+        reason: "increment")
+      future = create(:salary_revision, employee: employee, effective_on: Date.new(2027, 4, 1), amount: "1400000",
+        reason: "promotion")
+      log_in_as_hr
+
+      get "/api/employees/#{employee.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(json["employee"]).to include("id" => employee.id, "code" => employee.code, "bank_account" => "••••3210")
+      expect(json["employee"]["current_salary"]).to eq("amount" => "1320000.50", "currency_code" => "INR")
+      expect(json["employee"]["salary_revisions"]).to eq([
+        { "id" => future.id, "effective_on" => "2027-04-01", "amount" => "1400000.00", "currency_code" => "INR", "reason" => "promotion" },
+        { "id" => increment.id, "effective_on" => "2025-04-01", "amount" => "1320000.50", "currency_code" => "INR", "reason" => "increment" },
+        { "id" => initial.id, "effective_on" => "2024-01-15", "amount" => "1200000.00", "currency_code" => "INR", "reason" => "initial" }
+      ])
+      expect(response.body).not_to include("9876543210")
+    end
+
+    it "returns a JSON 404 for an unknown employee" do
+      log_in_as_hr
+
+      get "/api/employees/0"
+
+      expect(response).to have_http_status(:not_found)
+      expect(json).to eq("error" => "Not found")
     end
   end
 end
