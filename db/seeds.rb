@@ -11,14 +11,16 @@ else
 end
 
 # Approximate rates (units per 1 USD); HR keeps them up to date in the app.
-{ "BRL" => "5.05", "EUR" => "0.92", "GBP" => "0.79", "INR" => "83.25", "USD" => "1" }.each do |currency_code, units|
+{ "BRL" => "5.05", "CAD" => "1.37", "EUR" => "0.92", "GBP" => "0.79", "INR" => "83.25", "SGD" => "1.34", "USD" => "1" }.each do |currency_code, units|
   ExchangeRate.find_or_create_by!(currency_code:) { |rate| rate.units_per_usd = units }
 end
 
 countries = {
   "Brazil" => "BRL",
+  "Canada" => "CAD",
   "Germany" => "EUR",
   "India" => "INR",
+  "Singapore" => "SGD",
   "United Kingdom" => "GBP",
   "United States" => "USD"
 }
@@ -28,48 +30,11 @@ countries.each do |name, currency_code|
 end
 puts "Countries ready: #{Country.count}"
 
-# A small, fixed sample so the app isn't empty in development. The full
-# 10,000-employee seed comes once salaries exist.
+# Sample employees with salary histories (10,000 by default; set
+# SEED_EMPLOYEES for fewer). Fixed random seed, so every run gives the same data
+# for the same day.
 if Employee.none?
-  random = Random.new(42)
-  first_names = %w[Aarav Ana Ben Chloe Diego Emma Felix Hannah Isha Jonas Lucas Maya Noah Olivia Priya Rahul Sofia Tom]
-  last_names = %w[Almeida Becker Brown Costa Fischer Garcia Gupta Iyer Johnson Mehta Miller Nair Schmidt Silva Smith Taylor]
-  roles = {
-    "Engineering" => [ "Software Engineer", "Senior Software Engineer", "Engineering Manager" ],
-    "Sales" => [ "Account Executive", "Sales Manager" ],
-    "Finance" => [ "Accountant", "Finance Manager" ],
-    "People" => [ "HR Generalist", "Recruiter" ]
-  }
-  countries = Country.order(:name).to_a
-  # Rough starting salaries in each local currency, so amounts look realistic.
-  base_salary = { "BRL" => 90_000, "EUR" => 55_000, "INR" => 1_200_000, "GBP" => 45_000, "USD" => 80_000 }
-
-  50.times do |i|
-    department = roles.keys.sample(random: random)
-    joined_on = Date.new(2020, 1, 1) + random.rand(2000)
-    country = countries.sample(random: random)
-    employee = Employee.create!(
-      name: "#{first_names.sample(random: random)} #{last_names.sample(random: random)}",
-      email: "employee#{i + 1}@acme.test",
-      country: country,
-      department: department,
-      job_title: roles[department].sample(random: random),
-      joined_on: joined_on,
-      terminated_on: (joined_on + 400 + random.rand(400) if random.rand < 0.15),
-      bank_account_number: Array.new(12) { random.rand(10) }.join
-    )
-
-    amount = (base_salary.fetch(country.currency_code) * (0.8 + random.rand * 0.6)).round(-2)
-    employee.salary_revisions.create!(effective_on: joined_on, amount: amount, reason: "initial")
-    effective_on = joined_on
-    random.rand(4).times do
-      effective_on += 300 + random.rand(200)
-      break if employee.terminated_on && effective_on > employee.terminated_on
-
-      amount = (amount * (1.03 + random.rand * 0.12)).round(-2)
-      employee.salary_revisions.create!(effective_on: effective_on, amount: amount,
-        reason: random.rand < 0.2 ? "promotion" : "increment")
-    end
-  end
+  count = (ENV["SEED_EMPLOYEES"].presence || 10_000).to_i
+  Employees::SampleData.new(count:, today: Date.current, seed: 42).call
 end
 puts "Employees: #{Employee.count}"

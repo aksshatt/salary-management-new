@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe "db/seeds.rb" do
   def run_seeds(env)
-    stub_const("ENV", ENV.to_h.merge(env))
+    stub_const("ENV", ENV.to_h.merge("SEED_EMPLOYEES" => "50").merge(env))
     expect { load Rails.root.join("db/seeds.rb") }.to output.to_stdout
   end
 
@@ -31,7 +31,8 @@ RSpec.describe "db/seeds.rb" do
     2.times { run_seeds({}) }
 
     expect(Country.order(:name).pluck(:name, :currency_code)).to eq(
-      [ [ "Brazil", "BRL" ], [ "Germany", "EUR" ], [ "India", "INR" ], [ "United Kingdom", "GBP" ], [ "United States", "USD" ] ]
+      [ [ "Brazil", "BRL" ], [ "Canada", "CAD" ], [ "Germany", "EUR" ], [ "India", "INR" ], [ "Singapore", "SGD" ],
+        [ "United Kingdom", "GBP" ], [ "United States", "USD" ] ]
     )
   end
 
@@ -50,17 +51,13 @@ RSpec.describe "db/seeds.rb" do
     expect(SalaryRevision.order(:id).pluck(:effective_on, :amount, :reason)).to eq(first_salaries)
   end
 
-  it "gives every sample employee an initial salary on the join date and up to 3 later raises" do
-    run_seeds({})
+  it "creates SEED_EMPLOYEES sample employees (10,000 by default) using the sample data generator" do
+    generator = instance_double(Employees::SampleData, call: nil)
+    allow(Employees::SampleData).to receive(:new).and_return(generator)
 
-    Employee.includes(:salary_revisions, :country).find_each do |employee|
-      revisions = employee.salary_revisions.sort_by(&:effective_on)
+    run_seeds("SEED_EMPLOYEES" => nil)
 
-      expect(revisions.first).to have_attributes(reason: "initial", effective_on: employee.joined_on)
-      expect(revisions.size).to be_between(1, 4)
-      expect(revisions.map(&:currency_code).uniq).to eq([ employee.country.currency_code ])
-      expect(revisions.each_cons(2).all? { |a, b| b.amount > a.amount }).to be(true)
-    end
+    expect(Employees::SampleData).to have_received(:new).with(count: 10_000, today: Date.current, seed: 42)
   end
 
   it "creates an exchange rate for every country's currency, with USD at 1" do
