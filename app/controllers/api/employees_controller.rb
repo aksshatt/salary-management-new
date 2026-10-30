@@ -25,7 +25,7 @@ module Api
 
       render json: {
         employee: employee_json(employee).merge(
-          current_salary: current && money_json(current.amount, current.currency_code),
+          current_salary: current && current_salary_detail_json(current),
           salary_revisions: revisions.map { |revision| revision_json(revision) }
         )
       }
@@ -56,8 +56,16 @@ module Api
         params.expect(employee: %i[name email country_id department job_title joined_on bank_account_number])
       end
 
+      def current_salary_detail_json(revision)
+        usd = ExchangeRate.usd_or_nil(revision.amount, revision.currency_code)
+        money_json(revision.amount, revision.currency_code).merge(usd: usd && format_money(usd))
+      end
+
       def current_salary_json(employee)
-        employee.current_salary_amount && money_json(employee.current_salary_amount, employee.current_salary_currency)
+        return unless employee.current_salary_amount
+
+        money_json(employee.current_salary_amount, employee.current_salary_currency)
+          .merge(usd: employee.current_salary_usd && format_money(employee.current_salary_usd))
       end
   end
 end
