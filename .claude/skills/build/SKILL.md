@@ -29,10 +29,15 @@ No code until I say ok.
 Clean `git status`, then `git fetch origin` and `git switch -c <type>/<short-name> --no-track origin/main` (type matches the commit type). Stay on the current branch if it already fits.
 
 ## 5. Test-first, one behaviour at a time
-1. Write a failing spec.
+Strict red-green-refactor. Repeat this cycle for each behaviour:
+1. Write ONE failing spec for ONE behaviour. Never write a whole layer's specs up front.
 2. Run it and show it fails for the right reason (wrong value or missing method, not a load error).
-3. Write the minimal code to pass.
-4. Refactor, then run the `verify` skill.
+3. Write only enough code to make that spec pass. Nothing for the next behaviour yet.
+4. Run it green, refactor, then move to the next behaviour.
+
+When the piece is done, run the `verify` skill.
+
+No code without a failing test first. That includes UI components, hooks and seeds. Generators are allowed only for empty scaffolding (e.g. an empty migration); any logic they add must be removed and rebuilt test-first. If a spec has to change after the code passes, say so and why.
 
 Cover edge cases that apply: month end, leap-year February, joining or leaving on the 1st or the last day, negative net, locked months, currency conversion, nil or empty data.
 
