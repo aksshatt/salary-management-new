@@ -1,7 +1,9 @@
 #!/bin/bash -e
-# Prepare the database before starting the server.
+# Prepare and seed the database before starting the server.
 if [ "$1" == "./bin/rails" ] && [ "$2" == "server" ]; then
   ./bin/rails db:prepare
+  # Seeds only what is missing (HR user, rates, countries, sample employees).
+  ./bin/rails db:seed
 fi
 
 exec "${@}"
