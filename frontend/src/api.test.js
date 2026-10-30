@@ -1,12 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, apiFetch } from './api.js'
+import { ApiError, apiFetch, setCsrfToken } from './api.js'
 
 function jsonResponse(status, body) {
   return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) }
 }
 
 describe('apiFetch', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    setCsrfToken(null)
+  })
 
   it('prefixes the path with /api and returns the parsed JSON', async () => {
     const fetch = vi.fn().mockResolvedValue(jsonResponse(200, { id: 1 }))
@@ -42,5 +45,29 @@ describe('apiFetch', () => {
     expect(error).toBeInstanceOf(ApiError)
     expect(error.status).toBe(422)
     expect(error.message).toBe('Invalid date')
+  })
+
+  it('sends the CSRF token on writes', async () => {
+    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, {}))
+    vi.stubGlobal('fetch', fetch)
+    setCsrfToken('token-123')
+
+    for (const method of ['POST', 'PATCH', 'PUT', 'DELETE']) {
+      await apiFetch('/session', { method })
+    }
+
+    for (const call of fetch.mock.calls) {
+      expect(call[1].headers['X-CSRF-Token']).toBe('token-123')
+    }
+  })
+
+  it('does not send the CSRF token on reads', async () => {
+    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, {}))
+    vi.stubGlobal('fetch', fetch)
+    setCsrfToken('token-123')
+
+    await apiFetch('/session')
+
+    expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('X-CSRF-Token')
   })
 })

@@ -1,9 +1,11 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
-#
-# Example:
-#
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# The single HR login. Credentials come from the environment so no password
+# lives in the code.
+hr_email = ENV.fetch("HR_EMAIL", nil)
+hr_password = ENV.fetch("HR_PASSWORD", nil)
+
+if hr_email.present? && hr_password.present?
+  User.find_or_initialize_by(email_address: hr_email).update!(password: hr_password)
+  puts "HR user ready: #{hr_email}"
+else
+  puts "Skipping HR user: set HR_EMAIL and HR_PASSWORD"
+end

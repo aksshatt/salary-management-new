@@ -6,6 +6,13 @@ export class ApiError extends Error {
   }
 }
 
+const WRITE_METHODS = ['POST', 'PATCH', 'PUT', 'DELETE']
+let csrfToken = null
+
+export function setCsrfToken(token) {
+  csrfToken = token
+}
+
 export async function apiFetch(path, { method = 'GET', body } = {}) {
   const response = await fetch(`/api${path}`, {
     method,
@@ -13,6 +20,7 @@ export async function apiFetch(path, { method = 'GET', body } = {}) {
     headers: {
       Accept: 'application/json',
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(WRITE_METHODS.includes(method) && csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
