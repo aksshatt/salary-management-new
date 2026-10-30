@@ -125,4 +125,17 @@ RSpec.describe SalaryRevision do
     expect { revision.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
     expect(SalaryRevision.exists?(revision.id)).to be(true)
   end
+
+  it "never applies when dated after the employee's last working day" do
+    on_last_day = create(:salary_revision, employee: employee, effective_on: Date.new(2025, 6, 30), reason: "increment")
+    scheduled = create(:salary_revision, employee: employee, effective_on: Date.new(2025, 7, 1), reason: "increment")
+
+    employee.terminate(on: Date.new(2025, 6, 30))
+
+    expect([ on_last_day.reload.never_applied?, scheduled.reload.never_applied? ]).to eq([ false, true ])
+  end
+
+  it "applies normally while the employee hasn't left" do
+    expect(create(:salary_revision, employee: employee).never_applied?).to be(false)
+  end
 end

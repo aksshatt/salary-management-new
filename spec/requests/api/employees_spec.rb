@@ -248,11 +248,26 @@ RSpec.describe "API employees", type: :request do
       expect(json["employee"]).to include("id" => employee.id, "code" => employee.code, "bank_account" => "••••3210")
       expect(json["employee"]["current_salary"]).to eq("amount" => "1320000.50", "currency_code" => "INR")
       expect(json["employee"]["salary_revisions"]).to eq([
-        { "id" => future.id, "effective_on" => "2027-04-01", "amount" => "1400000.00", "currency_code" => "INR", "reason" => "promotion" },
-        { "id" => increment.id, "effective_on" => "2025-04-01", "amount" => "1320000.50", "currency_code" => "INR", "reason" => "increment" },
-        { "id" => initial.id, "effective_on" => "2024-01-15", "amount" => "1200000.00", "currency_code" => "INR", "reason" => "initial" }
+        { "id" => future.id, "effective_on" => "2027-04-01", "amount" => "1400000.00", "currency_code" => "INR", "reason" => "promotion",
+          "never_applied" => false },
+        { "id" => increment.id, "effective_on" => "2025-04-01", "amount" => "1320000.50", "currency_code" => "INR", "reason" => "increment",
+          "never_applied" => false },
+        { "id" => initial.id, "effective_on" => "2024-01-15", "amount" => "1200000.00", "currency_code" => "INR", "reason" => "initial",
+          "never_applied" => false }
       ])
       expect(response.body).not_to include("9876543210")
+    end
+
+    it "flags revisions dated after the last working day as never applied" do
+      create(:salary_revision, employee: employee, effective_on: Date.new(2024, 1, 15))
+      create(:salary_revision, employee: employee, effective_on: Date.new(2026, 11, 1), reason: "increment")
+      employee.terminate(on: Date.new(2026, 10, 31))
+      log_in_as_hr
+
+      get "/api/employees/#{employee.id}"
+
+      expect(json["employee"]["salary_revisions"].map { |r| [ r["effective_on"], r["never_applied"] ] })
+        .to eq([ [ "2026-11-01", true ], [ "2024-01-15", false ] ])
     end
 
     it "returns a JSON 404 for an unknown employee" do

@@ -1,16 +1,12 @@
-import { Alert, Button, Input, Select, Space, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Input, Select, Space, Table, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import AddEmployeeModal from './AddEmployeeModal.jsx'
 import { apiFetch } from './api.js'
 import { formatMoney } from './format.js'
+import { STATUSES } from './statuses.js'
+import StatusTag from './StatusTag.jsx'
 import { employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
-
-const STATUS_TAGS = {
-  active: { color: 'green', label: 'Active' },
-  upcoming: { color: 'blue', label: 'Upcoming' },
-  terminated: { color: 'default', label: 'Terminated' },
-}
 
 const COLUMNS = [
   { title: 'Code', dataIndex: 'code' },
@@ -22,7 +18,7 @@ const COLUMNS = [
   {
     title: 'Status',
     dataIndex: 'status',
-    render: (status) => <Tag color={STATUS_TAGS[status].color}>{STATUS_TAGS[status].label}</Tag>,
+    render: (status) => <StatusTag status={status} />,
   },
   { title: 'Annual salary', dataIndex: 'current_salary', align: 'right', render: formatMoney },
   { title: 'Bank account', dataIndex: 'bank_account' },
@@ -107,7 +103,7 @@ export default function EmployeesPage() {
           placeholder="Status"
           allowClear
           value={query.status || undefined}
-          options={Object.entries(STATUS_TAGS).map(([value, { label }]) => ({ value, label }))}
+          options={Object.entries(STATUSES).map(([value, { label }]) => ({ value, label }))}
           onChange={(value) => updateQuery({ status: value ?? '' })}
           style={{ width: 140 }}
         />

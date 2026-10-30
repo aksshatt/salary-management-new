@@ -16,6 +16,11 @@ class SalaryRevision < ApplicationRecord
   # History must stay accurate: a change is a new revision, never an edit.
   def readonly? = persisted?
 
+  # A raise scheduled before someone resigned stays in the history but never takes effect.
+  def never_applied?
+    employee.terminated_on.present? && effective_on > employee.terminated_on
+  end
+
   private
     # The decimal(12,2) column rounds on assignment, so check what was entered.
     def amount_has_at_most_two_decimals

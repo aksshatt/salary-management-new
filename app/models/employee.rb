@@ -19,6 +19,7 @@ class Employee < ApplicationRecord
     allow_blank: true
   validate :terminated_on_not_before_joined_on
   validate :joined_on_unchanged, on: :update
+  validate :terminated_on_unchanged, on: :update
 
   def status
     today = Date.current
@@ -32,6 +33,12 @@ class Employee < ApplicationRecord
   def current_revision
     as_of = [ Date.current, terminated_on ].compact.min
     salary_revisions.where(effective_on: ..as_of).order(:effective_on).last
+  end
+
+  def terminate(on:)
+    self.terminated_on = on
+    errors.add(:terminated_on, :blank) if on.blank?
+    errors.empty? && save
   end
 
   # Only the payroll export may show the full number.
@@ -50,5 +57,10 @@ class Employee < ApplicationRecord
     # The first salary revision is dated on the join date and can't change.
     def joined_on_unchanged
       errors.add(:joined_on, "can't be changed") if joined_on_changed?
+    end
+
+    # Termination can't be undone and its date can't be changed.
+    def terminated_on_unchanged
+      errors.add(:terminated_on, "already terminated") if terminated_on_changed? && terminated_on_was.present?
     end
 end
