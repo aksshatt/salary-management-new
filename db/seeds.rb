@@ -35,21 +35,36 @@ if Employee.none?
     "Finance" => [ "Accountant", "Finance Manager" ],
     "People" => [ "HR Generalist", "Recruiter" ]
   }
-  country_ids = Country.order(:name).pluck(:id)
+  countries = Country.order(:name).to_a
+  # Rough starting salaries in each local currency, so amounts look realistic.
+  base_salary = { "BRL" => 90_000, "EUR" => 55_000, "INR" => 1_200_000, "GBP" => 45_000, "USD" => 80_000 }
 
   50.times do |i|
     department = roles.keys.sample(random: random)
     joined_on = Date.new(2020, 1, 1) + random.rand(2000)
-    Employee.create!(
+    country = countries.sample(random: random)
+    employee = Employee.create!(
       name: "#{first_names.sample(random: random)} #{last_names.sample(random: random)}",
       email: "employee#{i + 1}@acme.test",
-      country_id: country_ids.sample(random: random),
+      country: country,
       department: department,
       job_title: roles[department].sample(random: random),
       joined_on: joined_on,
       terminated_on: (joined_on + 400 + random.rand(400) if random.rand < 0.15),
       bank_account_number: Array.new(12) { random.rand(10) }.join
     )
+
+    amount = (base_salary.fetch(country.currency_code) * (0.8 + random.rand * 0.6)).round(-2)
+    employee.salary_revisions.create!(effective_on: joined_on, amount: amount, reason: "initial")
+    effective_on = joined_on
+    random.rand(4).times do
+      effective_on += 300 + random.rand(200)
+      break if employee.terminated_on && effective_on > employee.terminated_on
+
+      amount = (amount * (1.03 + random.rand * 0.12)).round(-2)
+      employee.salary_revisions.create!(effective_on: effective_on, amount: amount,
+        reason: random.rand < 0.2 ? "promotion" : "increment")
+    end
   end
 end
 puts "Employees: #{Employee.count}"
