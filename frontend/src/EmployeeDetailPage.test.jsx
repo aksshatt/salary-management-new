@@ -22,7 +22,7 @@ const employee = {
   terminated_on: null,
   status: 'active',
   bank_account: '••••3210',
-  current_salary: { amount: '1320000.50', currency_code: 'INR' },
+  current_salary: { amount: '1320000.50', currency_code: 'INR', usd: '15855.86' },
   salary_revisions: [
     { id: 2, effective_on: '2025-04-01', amount: '1320000.50', currency_code: 'INR', reason: 'increment' },
     { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR', reason: 'initial' },
@@ -79,7 +79,7 @@ describe('EmployeeDetailPage', () => {
     for (const text of ['EMP-00007', 'India', 'Sales', 'Account Manager', '••••3210']) {
       expect(screen.getByText(text)).toBeTruthy()
     }
-    expect(screen.getByTestId('current-salary').textContent).toBe('₹1,320,000.50')
+    expect(screen.getByTestId('current-salary').textContent).toBe('₹1,320,000.50 (≈ $15,855.86)')
 
     const history = screen.getByRole('region', { name: 'Salary history' })
     const rows = within(history).getAllByRole('row').slice(1)
