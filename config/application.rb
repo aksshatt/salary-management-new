@@ -40,5 +40,11 @@ module SalaryManagementNew
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Session cookie auth for the SPA: cookies for the signed session id, and a
+    # cookie session to hold the CSRF token.
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use ActionDispatch::Session::CookieStore, key: "_salary_management_session",
+      same_site: :lax, secure: Rails.env.production?
   end
 end
