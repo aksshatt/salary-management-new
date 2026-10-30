@@ -45,10 +45,9 @@ describe('App', () => {
       vi.fn().mockResolvedValue(jsonResponse(200, { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' })),
     )
 
-    renderAt('/')
+    renderAt('/employees/7')
 
     expect(await screen.findByText('hr@acme.test')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeTruthy()
   })
 
   it('shows a loading indicator while checking the session', () => {
@@ -116,5 +115,27 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Currencies' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Currencies' }).getAttribute('href')).toBe('/currencies')
+  })
+
+  it('shows the dashboard at /, with a link in the header', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) => {
+        if (url === '/api/session') return Promise.resolve(jsonResponse(200, { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' }))
+        if (url.startsWith('/api/filter_options')) return Promise.resolve(jsonResponse(200, { countries: [], departments: [], job_titles: [] }))
+        return Promise.resolve(
+          jsonResponse(200, {
+            month: '2026-09', as_of: '2026-09-30',
+            stats: { headcount: 0, without_salary: 0, annual_cost: null, monthly_cost: null, average: null, median: null, lowest: null, highest: null },
+            breakdown: { group_by: 'country', groups: [] },
+          }),
+        )
+      }),
+    )
+
+    renderAt('/')
+
+    expect(await screen.findByRole('heading', { name: 'Pay insights' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('href')).toBe('/')
   })
 })

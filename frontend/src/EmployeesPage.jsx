@@ -2,6 +2,7 @@ import { Alert, Button, Input, Select, Space, Table, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import AddEmployeeModal from './AddEmployeeModal.jsx'
+import EmployeeFilters from './EmployeeFilters.jsx'
 import { apiFetch } from './api.js'
 import { formatMoney } from './format.js'
 import { STATUSES } from './statuses.js'
@@ -78,33 +79,7 @@ export default function EmployeesPage() {
           onSearch={(q) => updateQuery({ q })}
           style={{ width: 260 }}
         />
-        <Select
-          aria-label="Country"
-          placeholder="Country"
-          allowClear
-          value={query.country_id || undefined}
-          options={options.countries.map((country) => ({ value: String(country.id), label: country.name }))}
-          onChange={(value) => updateQuery({ country_id: value ?? '' })}
-          style={{ width: 180 }}
-        />
-        <Select
-          aria-label="Department"
-          placeholder="Department"
-          allowClear
-          value={query.department || undefined}
-          options={options.departments.map((department) => ({ value: department, label: department }))}
-          onChange={(value) => updateQuery({ department: value ?? '' })}
-          style={{ width: 180 }}
-        />
-        <Select
-          aria-label="Job title"
-          placeholder="Job title"
-          allowClear
-          value={query.job_title || undefined}
-          options={options.job_titles.map((title) => ({ value: title, label: title }))}
-          onChange={(value) => updateQuery({ job_title: value ?? '' })}
-          style={{ width: 220 }}
-        />
+        <EmployeeFilters options={options} query={query} onChange={updateQuery} />
         <Select
           aria-label="Status"
           placeholder="Status"
