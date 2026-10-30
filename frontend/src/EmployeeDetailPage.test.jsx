@@ -207,4 +207,85 @@ describe('EmployeeDetailPage', () => {
 
     expect(await within(dialog).findByText('has already been taken')).toBeTruthy()
   })
+
+  it('shows the status and, once set, the last working day', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse(200, { employee: { ...employee, status: 'terminated', terminated_on: '2025-06-30' } }),
+      ),
+    )
+
+    renderAt('/employees/7')
+
+    expect(await screen.findByText('Terminated')).toBeTruthy()
+    expect(screen.getByText('2025-06-30')).toBeTruthy()
+  })
+
+  it('terminates after a warning, then hides the Terminate button', async () => {
+    let terminated = false
+    const fetch = vi.fn((url, request) => {
+      if (request?.method === 'POST') {
+        terminated = true
+        return Promise.resolve(jsonResponse(200, { employee: { ...employee, terminated_on: '2026-10-31' } }))
+      }
+      const current = terminated ? { ...employee, terminated_on: '2026-10-31' } : employee
+      return Promise.resolve(jsonResponse(200, { employee: current }))
+    })
+    vi.stubGlobal('fetch', fetch)
+    renderAt('/employees/7')
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+
+    const actions = screen.getByRole('group', { name: 'Employee actions' })
+    fireEvent.click(within(actions).getByRole('button', { name: 'Terminate' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.textContent).toContain("This can't be undone.")
+    fireEvent.change(within(dialog).getByLabelText('Last working day'), { target: { value: '2026-10-31' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Terminate' }))
+
+    expect(await screen.findByText('2026-10-31')).toBeTruthy()
+    const [url, request] = fetch.mock.calls.find(([, r]) => r?.method === 'POST')
+    expect(url).toBe('/api/employees/7/termination')
+    expect(JSON.parse(request.body)).toEqual({ terminated_on: '2026-10-31' })
+    expect(within(screen.getByRole('group', { name: 'Employee actions' })).queryByRole('button', { name: 'Terminate' })).toBeNull()
+  })
+
+  it("shows the API's error next to the date when termination fails", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url, request) =>
+        Promise.resolve(
+          request?.method === 'POST'
+            ? jsonResponse(422, { errors: { terminated_on: ["can't be before the join date"] } })
+            : jsonResponse(200, { employee }),
+        ),
+      ),
+    )
+    renderAt('/employees/7')
+    await screen.findByRole('heading', { name: 'Priya Nair' })
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'Employee actions' })).getByRole('button', { name: 'Terminate' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Last working day'), { target: { value: '2023-01-01' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Terminate' }))
+
+    expect(await within(dialog).findByText("can't be before the join date")).toBeTruthy()
+  })
+
+  it('marks revisions that never applied', async () => {
+    const revisions = [
+      { id: 3, effective_on: '2026-11-01', amount: '1400000.00', currency_code: 'INR', reason: 'increment', never_applied: true },
+      { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR', reason: 'initial', never_applied: false },
+    ]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(200, { employee: { ...employee, terminated_on: '2026-10-31', salary_revisions: revisions } })),
+    )
+
+    renderAt('/employees/7')
+
+    const history = await screen.findByRole('region', { name: 'Salary history' })
+    const rows = (await within(history).findAllByRole('row')).slice(1)
+    expect(rows.map((row) => row.textContent.includes('Never applied'))).toEqual([true, false])
+  })
 })
