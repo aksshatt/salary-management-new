@@ -4,7 +4,9 @@ Rails.application.routes.draw do
 
   namespace :api do
     resource :session, only: %i[show create destroy]
-    resources :employees, only: %i[index]
+    resources :employees, only: %i[index show] do
+      resources :salary_revisions, only: %i[create]
+    end
     resource :filter_options, only: %i[show]
   end
 
