@@ -37,7 +37,13 @@ module Api
       end
 
       def money_values(row)
-        row.to_h { |key, value| [ key, key.in?(MONEY) && value ? format_money(value) : value ] }
+        row.to_h do |key, value|
+          if value.nil? then [ key, nil ]
+          elsif key.in?(MONEY) then [ key, format_money(value) ]
+          elsif key == :average_raise_percent then [ key, format_percent(value) ]
+          else [ key, value ]
+          end
+        end
       end
   end
 end
