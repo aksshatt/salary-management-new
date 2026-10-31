@@ -7,7 +7,7 @@ import { apiFetch } from './api.js'
 import { formatMoney } from './format.js'
 import { STATUSES } from './statuses.js'
 import StatusTag from './StatusTag.jsx'
-import { employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
+import { employeeExportUrl, employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
 
 const COLUMNS = [
   { title: 'Code', dataIndex: 'code' },
@@ -66,9 +66,13 @@ export default function EmployeesPage() {
     <>
       <Space style={{ width: '100%', justifyContent: 'space-between' }}>
         <Typography.Title level={3}>Employees</Typography.Title>
-        <Button type="primary" onClick={() => setAdding(true)}>
-          Add employee
-        </Button>
+        <Space>
+          {/* A plain link: the browser downloads the file with the login cookie. */}
+          <Button href={employeeExportUrl(query)}>Export CSV</Button>
+          <Button type="primary" onClick={() => setAdding(true)}>
+            Add employee
+          </Button>
+        </Space>
       </Space>
       <Space wrap style={{ marginBottom: 16 }}>
         <Input.Search
