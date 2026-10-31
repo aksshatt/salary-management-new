@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { apiFetch } from './api.js'
 import { donutData } from './chartData.js'
 import EmployeeFilters from './EmployeeFilters.jsx'
+import { filterOptionsUrl } from './employeeQuery.js'
 import { formatMoney } from './format.js'
 import { insightsQueryString, parseInsightsQuery } from './insightsQuery.js'
 
@@ -40,9 +41,10 @@ export default function DashboardPage() {
   }, [trendsQueryString])
   const [options, setOptions] = useState({ countries: [], departments: [], job_titles: [] })
 
+  const optionsUrl = filterOptionsUrl(query)
   useEffect(() => {
-    apiFetch('/filter_options').then(setOptions)
-  }, [])
+    apiFetch(optionsUrl).then(setOptions)
+  }, [optionsUrl])
 
   useEffect(() => {
     apiFetch(`/insights${queryString}`)

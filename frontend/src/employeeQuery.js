@@ -23,3 +23,14 @@ export function employeeQueryString(query) {
 export function employeeExportUrl(query) {
   return `/api/employees/export.csv${employeeQueryString({ ...query, page: 1 })}`
 }
+
+// Filter dropdown options only offer values that exist for the other chosen
+// filters (the API does the narrowing), so they're fetched with those filters.
+export function filterOptionsUrl(query) {
+  const params = new URLSearchParams()
+  for (const key of ['country_id', 'department', 'job_title', 'status']) {
+    if (query[key]) params.set(key, query[key])
+  }
+  const search = params.toString()
+  return search ? `/filter_options?${search}` : '/filter_options'
+}
