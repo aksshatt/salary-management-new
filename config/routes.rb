@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     end
     resource :filter_options, only: %i[show]
     resources :countries, only: %i[index update]
+    resources :payroll_runs, only: %i[index create]
     resources :exchange_rates, only: %i[index update], param: :currency_code
     resource :insights, only: %i[show] do
       get :trends
