@@ -1,12 +1,14 @@
 import { Button, Card, Descriptions, Result, Space, Statistic, Table, Tag, Typography } from 'antd'
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import AddRevisionModal from './AddRevisionModal.jsx'
 import EditEmployeeModal from './EditEmployeeModal.jsx'
 import { useParams } from 'react-router'
 import { apiFetch } from './api.js'
-import { formatMoney, formatSalaryWithUsd } from './format.js'
+import { formatChange, formatMoney, formatSalaryWithUsd } from './format.js'
 import StatusTag from './StatusTag.jsx'
 import TerminateModal from './TerminateModal.jsx'
+
+const SalaryTimeline = lazy(() => import('./SalaryTimeline.jsx'))
 
 const REASON_LABELS = {
   initial: 'Initial',
@@ -19,6 +21,7 @@ const REASON_LABELS = {
 const REVISION_COLUMNS = [
   { title: 'Effective from', dataIndex: 'effective_on' },
   { title: 'Annual salary', render: (_, revision) => formatMoney(revision) },
+  { title: 'Change', dataIndex: 'change_percent', align: 'right', render: formatChange },
   {
     title: 'Reason',
     dataIndex: 'reason',
@@ -94,6 +97,9 @@ export default function EmployeeDetailPage() {
       </Card>
       <section aria-label="Salary history">
         <Typography.Title level={4}>Salary history</Typography.Title>
+        <Suspense fallback={null}>
+          <SalaryTimeline revisions={employee.salary_revisions} />
+        </Suspense>
         <Table rowKey="id" columns={REVISION_COLUMNS} dataSource={employee.salary_revisions} pagination={false} />
       </section>
       <EditEmployeeModal
