@@ -18,6 +18,12 @@ module Api
       }
     end
 
+    def export
+      csv = Employees::CsvExport.new(EmployeeSearch.new(params).results).to_csv
+
+      send_data csv, type: "text/csv", filename: "employees-#{Date.current.iso8601}.csv"
+    end
+
     def show
       employee = Employee.includes(:country).find(params[:id])
       current = employee.current_revision
