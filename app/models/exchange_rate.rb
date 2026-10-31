@@ -1,6 +1,8 @@
 # How many units of a currency make 1 USD (e.g. INR 83.25). Used only to
 # compare pay across countries; salaries stay in local currency.
 class ExchangeRate < ApplicationRecord
+  include Auditable
+
   validates :currency_code, format: { with: /\A[A-Z]{3}\z/ }, uniqueness: true
   validates :units_per_usd, numericality: { greater_than: 0 }
   validate :usd_is_one

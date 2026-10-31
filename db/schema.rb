@@ -10,9 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_31_075156) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_31_083941) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "audit_events", force: :cascade do |t|
+    t.string "auditable_type", null: false
+    t.bigint "auditable_id", null: false
+    t.bigint "employee_id"
+    t.string "action", null: false
+    t.jsonb "field_changes", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.index ["auditable_type", "auditable_id"], name: "index_audit_events_on_auditable_type_and_auditable_id"
+    t.index ["created_at"], name: "index_audit_events_on_created_at"
+    t.index ["employee_id", "created_at"], name: "index_audit_events_on_employee_id_and_created_at"
+    t.check_constraint "action::text = ANY (ARRAY['create'::character varying, 'update'::character varying]::text[])", name: "audit_events_action"
+  end
 
   create_table "countries", force: :cascade do |t|
     t.string "name", null: false
@@ -120,6 +133,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_075156) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
+  add_foreign_key "audit_events", "employees"
   add_foreign_key "employees", "countries"
   add_foreign_key "payroll_entries", "employees"
   add_foreign_key "payroll_entries", "payroll_runs"
