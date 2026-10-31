@@ -138,4 +138,45 @@ RSpec.describe SalaryRevision do
   it "applies normally while the employee hasn't left" do
     expect(create(:salary_revision, employee: employee).never_applied?).to be(false)
   end
+
+  describe ".change_percents" do
+    def revise(on, amount, reason = "increment")
+      create(:salary_revision, employee:, effective_on: on, amount:, reason:)
+    end
+
+    it "gives each revision's % change from the one before it, none for the first" do
+      initial = revise(Date.new(2024, 1, 15), 1000, "initial")
+      raise_to = revise(Date.new(2025, 1, 15), 1100)
+
+      expect(described_class.change_percents(employee.salary_revisions)).to eq(initial.id => nil, raise_to.id => BigDecimal("10"))
+    end
+
+    it "rounds half up to 2 decimals, including drops from a correction" do
+      revise(Date.new(2024, 1, 15), 200_000, "initial")
+      up = revise(Date.new(2025, 1, 15), "200010.00")
+      down = revise(Date.new(2025, 2, 1), "197000.99", "correction")
+
+      changes = described_class.change_percents(employee.salary_revisions)
+
+      expect([ changes[up.id], changes[down.id] ]).to eq([ BigDecimal("0.01"), BigDecimal("-1.50") ])
+    end
+
+    it "compares by effective date, not the order revisions were added" do
+      revise(Date.new(2024, 1, 15), 1000, "initial")
+      later = revise(Date.new(2026, 1, 15), 1320)
+      earlier = revise(Date.new(2025, 1, 15), 1100, "correction")
+
+      changes = described_class.change_percents(employee.salary_revisions)
+
+      expect([ changes[earlier.id], changes[later.id] ]).to eq([ BigDecimal("10"), BigDecimal("20") ])
+    end
+
+    it "has no % change after a change of currency" do
+      revise(Date.new(2024, 1, 15), 1_200_000, "initial")
+      employee.update!(country: create(:country, name: "Germany", currency_code: "EUR"))
+      euros = revise(Date.new(2025, 1, 15), 60_000)
+
+      expect(described_class.change_percents(employee.salary_revisions)[euros.id]).to be_nil
+    end
+  end
 end
