@@ -26,6 +26,7 @@ class Employee < ApplicationRecord
   validate :terminated_on_not_before_joined_on
   validate :joined_on_unchanged, on: :update
   validate :terminated_on_unchanged, on: :update
+  validate :terminated_on_not_in_locked_payroll_month, if: :terminated_on_changed?
 
   def status
     today = Date.current
@@ -68,5 +69,15 @@ class Employee < ApplicationRecord
     # Termination can't be undone and its date can't be changed.
     def terminated_on_unchanged
       errors.add(:terminated_on, "already terminated") if terminated_on_changed? && terminated_on_was.present?
+    end
+
+    # A month that was already paid can't be changed by a termination in it.
+    def terminated_on_not_in_locked_payroll_month
+      return if terminated_on.nil?
+
+      run = PayrollRun.find_by(month: terminated_on.beginning_of_month)
+      return if run.nil? || run.open?
+
+      errors.add(:terminated_on, "falls in a locked payroll month (#{run.month.strftime('%Y-%m')})")
     end
 end

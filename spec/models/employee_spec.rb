@@ -153,6 +153,27 @@ RSpec.describe Employee do
   describe "#terminate" do
     let(:employee) { create(:employee, joined_on: Date.new(2024, 1, 15)) }
 
+    context "with payroll for September (locked) and October (open)" do
+      before do
+        create(:payroll_run, month: Date.new(2026, 9, 1))
+        create(:payroll_run, month: Date.new(2026, 10, 1))
+      end
+
+      it "can't fall in a locked payroll month" do
+        expect(employee.terminate(on: Date.new(2026, 9, 30))).to be(false)
+        expect(employee.errors[:terminated_on]).to include("falls in a locked payroll month (2026-09)")
+        expect(employee.reload.terminated_on).to be_nil
+      end
+
+      it "can fall in the open month" do
+        expect(employee.terminate(on: Date.new(2026, 10, 1))).to be(true)
+      end
+
+      it "can fall before the first payroll" do
+        expect(employee.terminate(on: Date.new(2026, 8, 31))).to be(true)
+      end
+    end
+
     it "sets the last working day, which can be the join date" do
       expect(employee.terminate(on: Date.new(2024, 1, 15))).to be(true)
       expect(employee.reload.terminated_on).to eq(Date.new(2024, 1, 15))

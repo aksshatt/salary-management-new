@@ -60,4 +60,15 @@ RSpec.describe "API termination", type: :request do
     expect(response).to have_http_status(:unprocessable_content)
     expect(employee.reload.terminated_on).to be_nil
   end
+
+  it "returns 422 for a last working day in a locked payroll month" do
+    create(:payroll_run, month: Date.new(2026, 9, 1))
+    create(:payroll_run, month: Date.new(2026, 10, 1))
+    log_in(create(:user))
+
+    post path, params: { terminated_on: "2026-09-15" }, headers: csrf_headers, as: :json
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(json["errors"]).to eq("terminated_on" => [ "falls in a locked payroll month (2026-09)" ])
+  end
 end

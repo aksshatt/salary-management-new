@@ -179,4 +179,11 @@ RSpec.describe SalaryRevision do
       expect(described_class.change_percents(employee.salary_revisions)[euros.id]).to be_nil
     end
   end
+
+  it "can still be backdated into a locked payroll month (no automatic back pay)" do
+    create(:payroll_run, month: Date.new(2026, 9, 1))
+    create(:payroll_run, month: Date.new(2026, 10, 1))
+
+    expect(build(:salary_revision, employee:, effective_on: Date.new(2026, 9, 1), reason: "increment")).to be_valid
+  end
 end
