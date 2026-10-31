@@ -14,3 +14,9 @@ export function movementData(points) {
     { month: point.month, type: 'Leavers', count: point.leavers },
   ])
 }
+
+export function timelineData(revisions) {
+  return [...revisions]
+    .sort((a, b) => a.effective_on.localeCompare(b.effective_on))
+    .map((revision) => ({ date: revision.effective_on, value: Number(revision.amount), currency: revision.currency_code }))
+}

@@ -5,6 +5,11 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import EmployeeDetailPage from './EmployeeDetailPage.jsx'
 
+// Charts draw on a canvas, which jsdom doesn't have; show their data instead.
+vi.mock('@ant-design/charts', () => ({
+  Line: ({ data }) => <output data-testid="salary-timeline">{JSON.stringify(data)}</output>,
+}))
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -24,8 +29,8 @@ const employee = {
   bank_account: '••••3210',
   current_salary: { amount: '1320000.50', currency_code: 'INR', usd: '15855.86' },
   salary_revisions: [
-    { id: 2, effective_on: '2025-04-01', amount: '1320000.50', currency_code: 'INR', reason: 'increment' },
-    { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR', reason: 'initial' },
+    { id: 2, effective_on: '2025-04-01', amount: '1320000.50', currency_code: 'INR', reason: 'increment', change_percent: '10.00' },
+    { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR', reason: 'initial', change_percent: null },
   ],
 }
 
@@ -84,8 +89,8 @@ describe('EmployeeDetailPage', () => {
     const history = screen.getByRole('region', { name: 'Salary history' })
     const rows = within(history).getAllByRole('row').slice(1)
     expect(rows.map((row) => row.textContent)).toEqual([
-      '2025-04-01₹1,320,000.50Increment',
-      '2024-01-15₹1,200,000.00Initial',
+      '2025-04-01₹1,320,000.50+10.00%Increment',
+      '2024-01-15₹1,200,000.00—Initial',
     ])
   })
 
@@ -106,7 +111,7 @@ describe('EmployeeDetailPage', () => {
   })
 
   it('adds a salary revision and shows it in the history', async () => {
-    const added = { id: 3, effective_on: '2026-04-01', amount: '1450000.00', currency_code: 'INR', reason: 'promotion' }
+    const added = { id: 3, effective_on: '2026-04-01', amount: '1450000.00', currency_code: 'INR', reason: 'promotion', change_percent: '9.85' }
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(200, { employee }))
@@ -274,8 +279,8 @@ describe('EmployeeDetailPage', () => {
 
   it('marks revisions that never applied', async () => {
     const revisions = [
-      { id: 3, effective_on: '2026-11-01', amount: '1400000.00', currency_code: 'INR', reason: 'increment', never_applied: true },
-      { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR', reason: 'initial', never_applied: false },
+      { id: 3, effective_on: '2026-11-01', amount: '1400000.00', currency_code: 'INR', reason: 'increment', never_applied: true, change_percent: '16.67' },
+      { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR', reason: 'initial', never_applied: false, change_percent: null },
     ]
     vi.stubGlobal(
       'fetch',
@@ -287,5 +292,16 @@ describe('EmployeeDetailPage', () => {
     const history = await screen.findByRole('region', { name: 'Salary history' })
     const rows = (await within(history).findAllByRole('row')).slice(1)
     expect(rows.map((row) => row.textContent.includes('Never applied'))).toEqual([true, false])
+  })
+
+  it('draws the salary over time, oldest first', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, { employee })))
+
+    renderAt('/employees/7')
+
+    expect(JSON.parse((await screen.findByTestId('salary-timeline')).textContent)).toEqual([
+      { date: '2024-01-15', value: 1200000, currency: 'INR' },
+      { date: '2025-04-01', value: 1320000.5, currency: 'INR' },
+    ])
   })
 })

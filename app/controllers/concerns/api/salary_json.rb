@@ -11,6 +11,11 @@ module Api
         ActiveSupport::NumberHelper.number_to_rounded(amount, precision: 2)
       end
 
+      # A percentage as a string with 2 decimals, e.g. "10.00".
+      def format_percent(value)
+        ActiveSupport::NumberHelper.number_to_rounded(value, precision: 2)
+      end
+
       def revision_json(revision)
         {
           id: revision.id,

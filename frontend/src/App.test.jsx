@@ -5,6 +5,9 @@ import { MemoryRouter, useLocation } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App.jsx'
 
+// Pages are lazy-loaded chunks; the first import can take over a second on CI,
+// past Testing Library's default 1 s wait.
+const LAZY_PAGE = { timeout: 4000 }
 
 afterEach(() => {
   cleanup()
@@ -73,7 +76,7 @@ describe('App', () => {
 
     renderAt('/employees')
 
-    expect(await screen.findByRole('heading', { name: 'Employees' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Employees' }, LAZY_PAGE)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Employees' }).getAttribute('href')).toBe('/employees')
   })
 
@@ -98,7 +101,7 @@ describe('App', () => {
 
     renderAt('/employees/7')
 
-    expect(await screen.findByRole('heading', { name: 'Priya Nair' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Priya Nair' }, LAZY_PAGE)).toBeTruthy()
   })
 
   it('shows the currencies page at /currencies, with a link in the header', async () => {
@@ -113,7 +116,7 @@ describe('App', () => {
 
     renderAt('/currencies')
 
-    expect(await screen.findByRole('heading', { name: 'Currencies' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Currencies' }, LAZY_PAGE)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Currencies' }).getAttribute('href')).toBe('/currencies')
   })
 
@@ -135,7 +138,7 @@ describe('App', () => {
 
     renderAt('/')
 
-    expect(await screen.findByRole('heading', { name: 'Pay insights' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Pay insights' }, LAZY_PAGE)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('href')).toBe('/')
   })
 })

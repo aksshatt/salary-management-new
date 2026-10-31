@@ -263,11 +263,11 @@ RSpec.describe "API employees", type: :request do
       expect(json["employee"]["current_salary"]).to eq("amount" => "1320000.50", "currency_code" => "INR", "usd" => "15855.86")
       expect(json["employee"]["salary_revisions"]).to eq([
         { "id" => future.id, "effective_on" => "2027-04-01", "amount" => "1400000.00", "currency_code" => "INR", "reason" => "promotion",
-          "never_applied" => false },
+          "never_applied" => false, "change_percent" => "6.06" },
         { "id" => increment.id, "effective_on" => "2025-04-01", "amount" => "1320000.50", "currency_code" => "INR", "reason" => "increment",
-          "never_applied" => false },
+          "never_applied" => false, "change_percent" => "10.00" },
         { "id" => initial.id, "effective_on" => "2024-01-15", "amount" => "1200000.00", "currency_code" => "INR", "reason" => "initial",
-          "never_applied" => false }
+          "never_applied" => false, "change_percent" => nil }
       ])
       expect(response.body).not_to include("9876543210")
     end
