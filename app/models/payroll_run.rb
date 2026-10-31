@@ -1,5 +1,7 @@
 # One month's payroll. `month` is the 1st of that month.
 class PayrollRun < ApplicationRecord
+  include Auditable
+
   validates :month, :calculated_at, presence: true
   validates :month, uniqueness: true
   validate :month_starts_on_the_first

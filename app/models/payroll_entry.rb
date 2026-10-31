@@ -1,6 +1,8 @@
 # One employee's pay in one payroll run. It stores the inputs it was
 # calculated from, so viewing and exporting never recalculate.
 class PayrollEntry < ApplicationRecord
+  include Auditable
+
   belongs_to :payroll_run
   belongs_to :employee
   belongs_to :salary_revision

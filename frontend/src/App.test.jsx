@@ -173,4 +173,20 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Payroll' }, LAZY_PAGE)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Payroll' }).getAttribute('href')).toBe('/payroll')
   })
+
+  it('shows the audit page at /audit, with a link in the header', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) =>
+        Promise.resolve(
+          jsonResponse(200, url === '/api/session' ? { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' } : { events: [], total: 0, page: 1, per_page: 25 }),
+        ),
+      ),
+    )
+
+    renderAt('/audit')
+
+    expect(await screen.findByRole('heading', { name: 'Audit' }, LAZY_PAGE)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Audit' }).getAttribute('href')).toBe('/audit')
+  })
 })

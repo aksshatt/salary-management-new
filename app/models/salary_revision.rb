@@ -1,4 +1,6 @@
 class SalaryRevision < ApplicationRecord
+  include Auditable
+
   REASONS = %w[initial increment promotion correction other].freeze
 
   belongs_to :employee

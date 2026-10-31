@@ -1,4 +1,7 @@
 class Employee < ApplicationRecord
+  include Auditable
+  audit_masked bank_account_number: :mask_bank_account
+
   belongs_to :country
   has_many :salary_revisions
 
@@ -49,9 +52,12 @@ class Employee < ApplicationRecord
   end
 
   # Only the payroll export may show the full number.
+  def self.mask_bank_account(number)
+    "••••#{number.length > 4 ? number.last(4) : ''}"
+  end
+
   def masked_bank_account
-    visible = bank_account_number.length > 4 ? bank_account_number.last(4) : ""
-    "••••#{visible}"
+    self.class.mask_bank_account(bank_account_number)
   end
 
   private
