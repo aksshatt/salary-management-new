@@ -1,24 +1,29 @@
-# README
+# Salary Management
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A web app for ACME's HR Manager to manage salaries for ~10,000 employees across countries: employee records and salary history, pay insights in USD, monthly payroll with Excel export, and an audit trail.
 
-Things you may want to cover:
+- Live: _add Render URL_
+- Requirements: [docs/requirements.md](docs/requirements.md) · Architecture: [docs/architecture.md](docs/architecture.md) · Performance: [docs/performance.md](docs/performance.md) · AI prompts: [docs/ai-prompts.md](docs/ai-prompts.md)
 
-* Ruby version
+## Stack
+Rails 8.1 (API) + Postgres · React (Vite) + Ant Design + @ant-design/charts · RSpec + factory_bot · Vitest + Testing Library · Docker on Render.
 
-* System dependencies
+## Run locally
+Requires Ruby 3.4.2, Node 22 and Postgres.
 
-* Configuration
+```bash
+bin/setup --skip-server
+npm --prefix frontend ci
+HR_EMAIL=hr@acme.test HR_PASSWORD=choose-one bin/rails db:seed   # 10,000 employees (SEED_EMPLOYEES=500 for fewer)
+bin/dev                                                          # http://localhost:5173
+```
 
-* Database creation
+## Tests and checks
+```bash
+bin/ci                      # RuboCop, bundler-audit, Brakeman, RSpec, frontend lint/tests/build
+bundle exec rspec           # backend
+npm --prefix frontend test  # frontend
+```
 
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+## How it was built
+Test-first (red → green per behaviour), small PRs with test/feat commit pairs, CI on every PR. See the AI prompt log for how AI tools were used.
