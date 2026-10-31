@@ -7,7 +7,10 @@ module Api
         .select("payroll_runs.*, COUNT(payroll_entries.id) AS entries_count")
       latest_month = runs.first&.month
 
-      render json: { payroll_runs: runs.map { |run| run_json(run, open: run.month == latest_month) } }
+      render json: {
+        payroll_runs: runs.map { |run| run_json(run, open: run.month == latest_month) },
+        generatable_months: Payroll::Generator.generatable_months.map { |month| month.strftime("%Y-%m") }
+      }
     end
 
     # Generates a new month, or recalculates the open (latest) month.
@@ -20,6 +23,15 @@ module Api
       run = result.run
       render json: { payroll_run: run_json(run, open: true, entries_count: run.payroll_entries.count) },
         status: existed ? :ok : :created
+    end
+
+    # The month's stored entries as Excel, with full bank account numbers.
+    def export
+      run = PayrollRun.find_by!(month: parse_month(params[:month]))
+
+      send_data Payroll::Exporter.new(run).to_xlsx,
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename: "payroll-#{run.month.strftime("%Y-%m")}.xlsx"
     end
 
     private
