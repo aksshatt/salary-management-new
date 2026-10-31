@@ -141,4 +141,20 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Pay insights' }, LAZY_PAGE)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('href')).toBe('/')
   })
+
+  it('shows the countries page at /countries, with a link in the header', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url) =>
+        Promise.resolve(
+          jsonResponse(200, url === '/api/session' ? { user: { email_address: 'hr@acme.test' }, csrf_token: 't1' } : { countries: [] }),
+        ),
+      ),
+    )
+
+    renderAt('/countries')
+
+    expect(await screen.findByRole('heading', { name: 'Countries' }, LAZY_PAGE)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Countries' }).getAttribute('href')).toBe('/countries')
+  })
 })
