@@ -37,4 +37,47 @@ RSpec.describe PayrollRun do
 
     expect([ september.open?, october.open? ]).to eq([ false, true ])
   end
+
+  describe "#outdated?" do
+    # Data created before the run was calculated.
+    let!(:employee) { travel_to(2.hours.ago) { create(:salary_revision).employee } }
+    let(:run) { create(:payroll_run, month: Date.new(2026, 10, 1), calculated_at: 1.hour.ago) }
+
+    it "is false when nothing changed after the last calculation" do
+      run
+
+      expect(run.outdated?).to be(false)
+    end
+
+    it "is true after a new salary revision" do
+      run
+      create(:salary_revision, employee:, effective_on: employee.joined_on + 30, reason: "increment")
+
+      expect(run.outdated?).to be(true)
+    end
+
+    it "is true after an employee is added, edited or terminated" do
+      run
+      employee.terminate(on: Date.current)
+
+      expect(run.outdated?).to be(true)
+    end
+
+    it "is true after a country's tax rate changes, but not after an exchange rate change" do
+      run
+      ExchangeRate.find_or_create_by!(currency_code: "USD") { |rate| rate.units_per_usd = 1 }.touch
+      expect(run.outdated?).to be(false)
+
+      employee.country.update!(tax_rate_percent: 33)
+      expect(run.outdated?).to be(true)
+    end
+
+    it "is false again once recalculated" do
+      run
+      employee.terminate(on: Date.current)
+      run.update!(calculated_at: Time.current)
+
+      expect(run.outdated?).to be(false)
+    end
+  end
 end
