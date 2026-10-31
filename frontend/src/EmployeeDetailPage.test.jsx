@@ -52,6 +52,7 @@ async function openEditDialog(patchResponse) {
     'fetch',
     vi.fn((url, request) => {
       if (url === '/api/filter_options') return Promise.resolve(jsonResponse(200, editOptions))
+      if (url === '/api/countries') return Promise.resolve(jsonResponse(200, { countries: editOptions.countries }))
       if (request?.method === 'PATCH') return Promise.resolve(patchResponse)
       return Promise.resolve(jsonResponse(200, { employee }))
     }),
@@ -180,6 +181,7 @@ describe('EmployeeDetailPage', () => {
     const options = { countries: [{ id: 3, name: 'India', currency_code: 'INR' }], departments: ['Sales'], job_titles: [] }
     const fetch = vi.fn((url, request) => {
       if (url === '/api/filter_options') return Promise.resolve(jsonResponse(200, options))
+      if (url === '/api/countries') return Promise.resolve(jsonResponse(200, { countries: options.countries }))
       if (request?.method === 'PATCH') return Promise.resolve(jsonResponse(200, { employee: { ...employee, name: 'Priya N.' } }))
       const renamed = fetch.mock.calls.some(([, r]) => r?.method === 'PATCH')
       return Promise.resolve(jsonResponse(200, { employee: { ...employee, name: renamed ? 'Priya N.' : 'Priya Nair' } }))

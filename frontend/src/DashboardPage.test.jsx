@@ -168,4 +168,13 @@ describe('DashboardPage', () => {
 
     expect(fetch.mock.calls.filter(([url]) => url.startsWith('/api/insights/trends')).length).toBe(1)
   })
+
+  it('asks for filter options that match the other chosen filters', async () => {
+    const fetch = stubApi()
+
+    renderAt('/?month=2026-09&department=Sales&group_by=department')
+    await screen.findByText('As of 2026-09-30')
+
+    expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/filter_options?department=Sales')
+  })
 })
