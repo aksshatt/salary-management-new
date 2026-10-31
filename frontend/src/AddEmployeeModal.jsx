@@ -2,9 +2,11 @@ import { Form, InputNumber, Modal } from 'antd'
 import { apiFetch } from './api.js'
 import EmployeeFormFields from './EmployeeFormFields.jsx'
 import { showFieldErrors } from './formErrors.js'
+import { useFormOptions } from './useFormOptions.js'
 
-export default function AddEmployeeModal({ open, options, onClose, onAdded }) {
+export default function AddEmployeeModal({ open, onClose, onAdded }) {
   const [form] = Form.useForm()
+  const options = useFormOptions(open)
   const countryId = Form.useWatch('country_id', form)
   const currency = options.countries.find((country) => String(country.id) === countryId)?.currency_code
 

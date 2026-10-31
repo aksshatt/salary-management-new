@@ -1,22 +1,16 @@
 import { Alert, Form, Modal } from 'antd'
-import { useEffect, useState } from 'react'
 import { apiFetch } from './api.js'
 import { employeeUpdatePayload } from './employeePayload.js'
 import EmployeeFormFields from './EmployeeFormFields.jsx'
 import { showFieldErrors } from './formErrors.js'
-
-const NO_OPTIONS = { countries: [], departments: [], job_titles: [] }
+import { useFormOptions } from './useFormOptions.js'
 
 export default function EditEmployeeModal({ employee, open, onClose, onSaved }) {
   const [form] = Form.useForm()
-  const [options, setOptions] = useState(NO_OPTIONS)
+  const options = useFormOptions(open)
   const countryId = Form.useWatch('country_id', form)
   const newCurrency = options.countries.find((country) => String(country.id) === countryId)?.currency_code
   const currentCurrency = employee.country.currency_code
-
-  useEffect(() => {
-    if (open) apiFetch('/filter_options').then(setOptions)
-  }, [open])
 
   async function handleFinish(values) {
     // The join date is shown for reference only and can't be changed.

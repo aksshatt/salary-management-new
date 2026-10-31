@@ -7,7 +7,7 @@ import { apiFetch } from './api.js'
 import { formatMoney } from './format.js'
 import { STATUSES } from './statuses.js'
 import StatusTag from './StatusTag.jsx'
-import { employeeExportUrl, employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
+import { employeeExportUrl, employeeQueryString, filterOptionsUrl, parseEmployeeQuery } from './employeeQuery.js'
 
 const COLUMNS = [
   { title: 'Code', dataIndex: 'code' },
@@ -42,11 +42,12 @@ export default function EmployeesPage() {
   const [options, setOptions] = useState({ countries: [], departments: [], job_titles: [] })
   const [adding, setAdding] = useState(false)
 
+  const optionsUrl = filterOptionsUrl(query)
   useEffect(() => {
-    apiFetch('/filter_options')
+    apiFetch(optionsUrl)
       .then(setOptions)
       .catch(() => {})
-  }, [])
+  }, [optionsUrl])
 
   useEffect(() => {
     apiFetch(`/employees${queryString}`)
@@ -110,7 +111,6 @@ export default function EmployeesPage() {
       />
       <AddEmployeeModal
         open={adding}
-        options={options}
         onClose={() => setAdding(false)}
         onAdded={(employee) => navigate(`/employees/${employee.id}`)}
       />

@@ -29,6 +29,13 @@ const priya = {
 function stubApi({ employees = [priya], total = employees.length, create } = {}) {
   const fetch = vi.fn((url, options) => {
     if (options?.method === 'POST') return Promise.resolve(create)
+    if (url === '/api/countries') {
+      const countries = [
+        { id: 3, name: 'India', currency_code: 'INR', tax_rate_percent: '20.00' },
+        { id: 9, name: 'Japan', currency_code: 'JPY', tax_rate_percent: '30.00' },
+      ]
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ countries }) })
+    }
     const body = url.startsWith('/api/filter_options')
       ? { countries: [{ id: 3, name: 'India', currency_code: 'INR' }], departments: ['Sales'], job_titles: ['Account Manager'] }
       : { employees, total, page: 1, per_page: 25 }
@@ -228,5 +235,26 @@ describe('EmployeesPage', () => {
     const link = screen.getByRole('link', { name: /Export CSV/ })
 
     expect(link.getAttribute('href')).toBe('/api/employees/export.csv?department=Sales')
+  })
+
+  it('asks for filter options that match the other chosen filters', async () => {
+    const fetch = stubApi()
+
+    renderAt('/employees?country_id=3&status=active&q=nair&page=2')
+    await screen.findByText('Priya Nair')
+
+    expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/filter_options?country_id=3&status=active')
+  })
+
+  it('offers every country when adding an employee, even one with nobody in it yet', async () => {
+    stubApi()
+    renderAt('/employees')
+    await screen.findByText('Priya Nair')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add employee' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.mouseDown(within(dialog).getByLabelText('Country'))
+
+    expect(await screen.findByTitle('Japan')).toBeTruthy()
   })
 })

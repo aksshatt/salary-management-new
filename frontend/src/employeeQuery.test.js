@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { employeeExportUrl, employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
+import { employeeExportUrl, employeeQueryString, filterOptionsUrl, parseEmployeeQuery } from './employeeQuery.js'
 
 describe('parseEmployeeQuery', () => {
   it('defaults to no filters on page 1', () => {
@@ -51,5 +51,15 @@ describe('employeeExportUrl', () => {
 
     expect(employeeExportUrl(query)).toBe('/api/employees/export.csv?q=nair&country_id=3&status=active')
     expect(employeeExportUrl({ ...query, q: '', country_id: '', status: '' })).toBe('/api/employees/export.csv')
+  })
+})
+
+describe('filterOptionsUrl', () => {
+  it('asks for options matching the chosen filters, ignoring search and page', () => {
+    expect(filterOptionsUrl({ q: 'nair', country_id: '3', department: '', job_title: 'Engineer', status: 'active', page: 2 })).toBe(
+      '/filter_options?country_id=3&job_title=Engineer&status=active',
+    )
+    expect(filterOptionsUrl({ month: '2026-09', department: 'Sales', group_by: 'department' })).toBe('/filter_options?department=Sales')
+    expect(filterOptionsUrl({})).toBe('/filter_options')
   })
 })
