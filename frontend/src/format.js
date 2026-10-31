@@ -11,3 +11,10 @@ export function formatSalaryWithUsd(salary) {
   if (!salary?.usd || salary.currency_code === 'USD') return local
   return `${local} (≈ ${formatMoney({ amount: salary.usd, currency_code: 'USD' })})`
 }
+
+// "10.00" → "+10.00%", "-1.50" → "−1.50%" (true minus sign), null → "—".
+export function formatChange(percent) {
+  if (percent === null) return '—'
+  if (percent.startsWith('-')) return `−${percent.slice(1)}%`
+  return Number(percent) > 0 ? `+${percent}%` : `${percent}%`
+}
