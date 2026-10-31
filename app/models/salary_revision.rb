@@ -16,6 +16,18 @@ class SalaryRevision < ApplicationRecord
   # History must stay accurate: a change is a new revision, never an edit.
   def readonly? = persisted?
 
+  # % change of each revision from the previous one by date: { id => BigDecimal or nil }.
+  # Nil for the first one and after a currency change (no like-for-like comparison).
+  def self.change_percents(revisions)
+    previous = nil
+    revisions.sort_by(&:effective_on).to_h do |revision|
+      comparable = previous && previous.currency_code == revision.currency_code
+      change = ((revision.amount - previous.amount) / previous.amount * 100).round(2, BigDecimal::ROUND_HALF_UP) if comparable
+      previous = revision
+      [ revision.id, change ]
+    end
+  end
+
   # A raise scheduled before someone resigned stays in the history but never takes effect.
   def never_applied?
     employee.terminated_on.present? && effective_on > employee.terminated_on
