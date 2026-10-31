@@ -70,4 +70,21 @@ RSpec.describe "API payroll runs", type: :request do
     expect(response).to have_http_status(:unprocessable_content)
     expect(PayrollRun.count).to eq(0)
   end
+
+  it "says which months can be generated next" do
+    hire
+    log_in(create(:user))
+    headers = csrf_headers
+
+    get "/api/payroll_runs"
+    expect(json["generatable_months"]).to eq(%w[2026-09 2026-10])
+
+    post "/api/payroll_runs", params: { month: "2026-09" }, headers:, as: :json
+    get "/api/payroll_runs"
+    expect(json["generatable_months"]).to eq(%w[2026-10])
+
+    post "/api/payroll_runs", params: { month: "2026-10" }, headers:, as: :json
+    get "/api/payroll_runs"
+    expect(json["generatable_months"]).to eq([])
+  end
 end
