@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_31_073714) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_31_075156) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,6 +56,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_073714) do
     t.check_constraint "units_per_usd > 0::numeric", name: "exchange_rates_positive"
   end
 
+  create_table "payroll_entries", force: :cascade do |t|
+    t.bigint "payroll_run_id", null: false
+    t.bigint "employee_id", null: false
+    t.bigint "salary_revision_id", null: false
+    t.string "currency_code", null: false
+    t.decimal "annual_salary", precision: 12, scale: 2, null: false
+    t.decimal "tax_rate_percent", precision: 5, scale: 2, null: false
+    t.integer "days_worked", null: false
+    t.integer "days_in_month", null: false
+    t.decimal "monthly_gross", precision: 12, scale: 2, null: false
+    t.decimal "bonus", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "deduction", precision: 12, scale: 2, default: "0.0", null: false
+    t.text "note"
+    t.decimal "tax", precision: 12, scale: 2, null: false
+    t.decimal "net", precision: 12, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["employee_id"], name: "index_payroll_entries_on_employee_id"
+    t.index ["payroll_run_id", "employee_id"], name: "index_payroll_entries_on_payroll_run_id_and_employee_id", unique: true
+    t.index ["salary_revision_id"], name: "index_payroll_entries_on_salary_revision_id"
+    t.check_constraint "bonus >= 0::numeric", name: "payroll_entries_bonus"
+    t.check_constraint "days_in_month >= 28 AND days_in_month <= 31 AND days_worked >= 1 AND days_worked <= days_in_month", name: "payroll_entries_days_worked"
+    t.check_constraint "deduction >= 0::numeric", name: "payroll_entries_deduction"
+  end
+
+  create_table "payroll_runs", force: :cascade do |t|
+    t.date "month", null: false
+    t.datetime "calculated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["month"], name: "index_payroll_runs_on_month", unique: true
+    t.check_constraint "EXTRACT(day FROM month) = 1::numeric", name: "payroll_runs_month_first_day"
+  end
+
   create_table "salary_revisions", force: :cascade do |t|
     t.bigint "employee_id", null: false
     t.decimal "amount", precision: 12, scale: 2, null: false
@@ -87,6 +121,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_073714) do
   end
 
   add_foreign_key "employees", "countries"
+  add_foreign_key "payroll_entries", "employees"
+  add_foreign_key "payroll_entries", "payroll_runs"
+  add_foreign_key "payroll_entries", "salary_revisions"
   add_foreign_key "salary_revisions", "employees"
   add_foreign_key "sessions", "users"
 end
