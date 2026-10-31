@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { costTrendData, donutData, movementData, timelineData } from './chartData.js'
+import { costTrendData, donutData, movementData, raiseData, timelineData } from './chartData.js'
 
 describe('donutData', () => {
   it('turns the cost breakdown into chart slices, skipping groups with no cost', () => {
@@ -47,6 +47,20 @@ describe('timelineData', () => {
     ).toEqual([
       { date: '2024-01-15', value: 1200000, currency: 'INR' },
       { date: '2025-04-01', value: 1320000.5, currency: 'INR' },
+    ])
+  })
+})
+
+describe('raiseData', () => {
+  it('gives the number of raises and the average raise % per month, with a gap when there were none', () => {
+    expect(
+      raiseData([
+        { month: '2026-08', raises: 0, average_raise_percent: null },
+        { month: '2026-09', raises: 12, average_raise_percent: '5.25' },
+      ]),
+    ).toEqual([
+      { month: '2026-08', raises: 0, average: null },
+      { month: '2026-09', raises: 12, average: 5.25 },
     ])
   })
 })

@@ -10,6 +10,7 @@ vi.mock('@ant-design/charts', () => ({
   Pie: ({ data }) => <output data-testid="donut">{JSON.stringify(data)}</output>,
   Line: ({ data }) => <output data-testid="cost-trend">{JSON.stringify(data)}</output>,
   Column: ({ data }) => <output data-testid="movement">{JSON.stringify(data)}</output>,
+  DualAxes: ({ data }) => <output data-testid="raises">{JSON.stringify(data)}</output>,
 }))
 
 afterEach(() => {
@@ -35,8 +36,8 @@ function jsonResponse(status, body) {
 
 const trends = {
   points: [
-    { month: '2026-08', as_of: '2026-08-31', monthly_cost: '12000.00', joiners: 1, leavers: 0 },
-    { month: '2026-09', as_of: '2026-09-30', monthly_cost: '12500.08', joiners: 2, leavers: 1 },
+    { month: '2026-08', as_of: '2026-08-31', monthly_cost: '12000.00', joiners: 1, leavers: 0, raises: 0, average_raise_percent: null },
+    { month: '2026-09', as_of: '2026-09-30', monthly_cost: '12500.08', joiners: 2, leavers: 1, raises: 3, average_raise_percent: '6.50' },
   ],
 }
 
@@ -149,6 +150,10 @@ describe('DashboardPage', () => {
       { month: '2026-09', value: 12500.08 },
     ])
     expect(JSON.parse(screen.getByTestId('movement').textContent)).toHaveLength(4)
+    expect(JSON.parse(screen.getByTestId('raises').textContent)).toEqual([
+      { month: '2026-08', raises: 0, average: null },
+      { month: '2026-09', raises: 3, average: 6.5 },
+    ])
     expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/insights/trends?month=2026-09&department=Sales')
   })
 
