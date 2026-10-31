@@ -62,6 +62,16 @@ async function openEditDialog(patchResponse) {
   return screen.findByRole('dialog')
 }
 
+// The page also loads the change history; tests that feed responses in order
+// get an empty history so the order isn't disturbed.
+function withEmptyHistory(fetch) {
+  return vi.fn((url, request) =>
+    url.startsWith('/api/audit_events')
+      ? Promise.resolve(jsonResponse(200, { events: [], total: 0, page: 1, per_page: 25 }))
+      : fetch(url, request),
+  )
+}
+
 function renderAt(path) {
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -119,7 +129,7 @@ describe('EmployeeDetailPage', () => {
       .mockResolvedValueOnce(
         jsonResponse(200, { employee: { ...employee, salary_revisions: [added, ...employee.salary_revisions] } }),
       )
-    vi.stubGlobal('fetch', fetch)
+    vi.stubGlobal('fetch', withEmptyHistory(fetch))
     renderAt('/employees/7')
     await screen.findByRole('heading', { name: 'Priya Nair' })
 
@@ -150,6 +160,7 @@ describe('EmployeeDetailPage', () => {
           jsonResponse(422, { errors: { effective_on: ["can't be before the join date (2024-01-15)"] } }),
         ),
     )
+    vi.stubGlobal('fetch', withEmptyHistory(fetch))
     renderAt('/employees/7')
     await screen.findByRole('heading', { name: 'Priya Nair' })
 
@@ -303,5 +314,21 @@ describe('EmployeeDetailPage', () => {
       { date: '2024-01-15', value: 1200000, currency: 'INR' },
       { date: '2025-04-01', value: 1320000.5, currency: 'INR' },
     ])
+  })
+
+  it("shows the employee's change history, including salary revisions", async () => {
+    const history = {
+      events: [{ id: 3, type: 'SalaryRevision', label: 'Priya Nair', employee_id: 7, action: 'create',
+        changes: { amount: [null, '1320000.5'] }, created_at: '2025-04-01T09:00:00.000Z' }],
+      total: 1, page: 1, per_page: 25,
+    }
+    const fetch = vi.fn((url) => Promise.resolve(jsonResponse(200, url.startsWith('/api/audit_events') ? history : { employee })))
+    vi.stubGlobal('fetch', fetch)
+
+    renderAt('/employees/7')
+
+    const section = await screen.findByRole('region', { name: 'Change history' })
+    expect(await within(section).findByText('Amount: — → 1320000.5')).toBeTruthy()
+    expect(fetch.mock.calls.map(([url]) => url)).toContain('/api/audit_events?employee_id=7')
   })
 })
