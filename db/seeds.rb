@@ -15,18 +15,23 @@ end
   ExchangeRate.find_or_create_by!(currency_code:) { |rate| rate.units_per_usd = units }
 end
 
+# Currency and an approximate flat tax rate (%) per country. Real tax rules are
+# out of scope; HR can edit the rate in the app.
 countries = {
-  "Brazil" => "BRL",
-  "Canada" => "CAD",
-  "Germany" => "EUR",
-  "India" => "INR",
-  "Singapore" => "SGD",
-  "United Kingdom" => "GBP",
-  "United States" => "USD"
+  "Brazil" => [ "BRL", "27.5" ],
+  "Canada" => [ "CAD", "26" ],
+  "Germany" => [ "EUR", "35" ],
+  "India" => [ "INR", "20" ],
+  "Singapore" => [ "SGD", "15" ],
+  "United Kingdom" => [ "GBP", "30" ],
+  "United States" => [ "USD", "25" ]
 }
 
-countries.each do |name, currency_code|
-  Country.find_or_create_by!(name: name) { |country| country.currency_code = currency_code }
+countries.each do |name, (currency_code, tax_rate_percent)|
+  Country.find_or_create_by!(name: name) do |country|
+    country.currency_code = currency_code
+    country.tax_rate_percent = tax_rate_percent
+  end
 end
 puts "Countries ready: #{Country.count}"
 
