@@ -67,4 +67,13 @@ RSpec.describe "db/seeds.rb" do
     expect(rates.keys).to match_array(Country.distinct.pluck(:currency_code))
     expect(rates["USD"]).to eq(1)
   end
+
+  it "gives every country an approximate flat tax rate" do
+    run_seeds({})
+
+    expect(Country.order(:name).pluck(:name, :tax_rate_percent).to_h).to eq(
+      "Brazil" => 27.5, "Canada" => 26, "Germany" => 35, "India" => 20, "Singapore" => 15,
+      "United Kingdom" => 30, "United States" => 25
+    )
+  end
 end

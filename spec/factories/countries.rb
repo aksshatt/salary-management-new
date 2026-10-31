@@ -2,6 +2,7 @@ FactoryBot.define do
   factory :country do
     sequence(:name) { |n| "Country #{n}" }
     currency_code { "USD" }
+    tax_rate_percent { BigDecimal("20") }
 
     # A country's currency must have an exchange rate.
     after(:build) do |country|
