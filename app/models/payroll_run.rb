@@ -15,6 +15,15 @@ class PayrollRun < ApplicationRecord
     !self.class.where("month > ?", month).exists?
   end
 
+  # Something payroll uses changed after this run was last calculated, so its
+  # numbers may be stale. It can flag a change that doesn't affect them (e.g.
+  # a raise dated next year); recalculating is harmless then.
+  def outdated?
+    SalaryRevision.where("created_at > ?", calculated_at).exists? ||
+      Employee.where("updated_at > ?", calculated_at).exists? ||
+      Country.where("updated_at > ?", calculated_at).exists?
+  end
+
   private
     def month_starts_on_the_first
       errors.add(:month, "must be the first day of a month") if month && month.day != 1
