@@ -27,19 +27,11 @@ class EmployeeSearch
       .joins(Employee.sanitize_sql([ CURRENT_SALARY_JOIN, { today: Date.current } ]))
       .select("employees.*, current_salary.amount AS current_salary_amount, current_salary.currency_code AS current_salary_currency, " \
         "current_salary.usd AS current_salary_usd")
-    employees = search(employees)
+    employees = employees.search(@params[:q]) if @params[:q].present?
     employees = employees.where(country_id: @params[:country_id]) if @params[:country_id].present?
     employees = employees.where(department: @params[:department]) if @params[:department].present?
     employees = employees.where(job_title: @params[:job_title]) if @params[:job_title].present?
     employees = employees.public_send(@params[:status]) if @params[:status].in?(STATUSES)
     employees
   end
-
-  private
-    def search(employees)
-      return employees if @params[:q].blank?
-
-      pattern = "%#{Employee.sanitize_sql_like(@params[:q].strip)}%"
-      employees.where("employees.name ILIKE :q OR employees.code ILIKE :q", q: pattern)
-    end
 end
