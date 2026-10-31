@@ -176,4 +176,14 @@ RSpec.describe Employee do
       expect(employee.reload.terminated_on).to eq(Date.new(2025, 6, 30))
     end
   end
+
+  it "pads short ids to 5 digits but never cuts long ones" do
+    expect([ create(:employee, id: 42).code, create(:employee, id: 123_456).code ]).to eq(%w[EMP-00042 EMP-123456])
+  end
+
+  it "guarantees unique codes in the database" do
+    code_index = ActiveRecord::Base.connection.indexes(:employees).find { |index| index.columns == [ "code" ] }
+
+    expect(code_index&.unique).to be(true)
+  end
 end
