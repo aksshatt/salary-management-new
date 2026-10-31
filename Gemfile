@@ -13,6 +13,9 @@ gem "bcrypt", "~> 3.1.7"
 # CSV export (no longer a default gem since Ruby 3.4)
 gem "csv"
 
+# Payroll export to Excel (.xlsx)
+gem "caxlsx", "~> 4.5"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 

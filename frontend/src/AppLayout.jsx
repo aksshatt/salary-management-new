@@ -15,6 +15,9 @@ export default function AppLayout({ user, onLogout, children }) {
           <Link to="/employees" style={{ color: 'rgba(255,255,255,0.85)' }}>
             Employees
           </Link>
+          <Link to="/payroll" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            Payroll
+          </Link>
           <Link to="/currencies" style={{ color: 'rgba(255,255,255,0.85)' }}>
             Currencies
           </Link>

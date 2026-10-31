@@ -9,6 +9,14 @@ module Payroll
       def success? = error.nil?
     end
 
+    # New months that may be generated now (the open month can always be recalculated).
+    def self.generatable_months
+      latest = PayrollRun.latest
+      this_month = Date.current.beginning_of_month
+      candidates = latest ? [ latest.month.next_month ] : [ this_month.prev_month, this_month ]
+      candidates.select { |month| new(month:).month_error.nil? }
+    end
+
     def initialize(month:)
       @month = month
       @last_day = month.end_of_month
@@ -30,23 +38,23 @@ module Payroll
       Result.new(run:, error: nil)
     end
 
-    private
-      def month_error
-        latest = PayrollRun.latest
-        this_month = Date.current.beginning_of_month
+    def month_error
+      latest = PayrollRun.latest
+      this_month = Date.current.beginning_of_month
 
-        if latest.nil?
-          allowed = [ this_month.prev_month, this_month ]
-          "The first payroll must be for #{allowed.map { |m| label(m) }.join(' or ')}" unless @month.in?(allowed)
-        elsif @month < latest.month
-          "#{label(@month)} is before the latest payroll and can't be generated"
-        elsif @month > latest.month.next_month
-          "The next payroll must be for #{label(latest.month.next_month)}"
-        elsif @month > this_month
-          "The next payroll must be for #{label(@month)}, which hasn't started yet"
-        end
+      if latest.nil?
+        allowed = [ this_month.prev_month, this_month ]
+        "The first payroll must be for #{allowed.map { |m| label(m) }.join(' or ')}" unless @month.in?(allowed)
+      elsif @month < latest.month
+        "#{label(@month)} is before the latest payroll and can't be generated"
+      elsif @month > latest.month.next_month
+        "The next payroll must be for #{label(latest.month.next_month)}"
+      elsif @month > this_month
+        "The next payroll must be for #{label(@month)}, which hasn't started yet"
       end
+    end
 
+    private
       def label(month)
         month.strftime("%Y-%m")
       end
