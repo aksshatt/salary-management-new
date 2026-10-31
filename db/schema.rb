@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_30_035912) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_31_071110) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,7 +23,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_035912) do
   end
 
   create_table "employees", force: :cascade do |t|
-    t.virtual "code", type: :string, as: "('EMP-'::text || lpad((id)::text, 5, '0'::text))", stored: true
     t.string "name", null: false
     t.string "email", null: false
     t.bigint "country_id", null: false
@@ -34,6 +33,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_035912) do
     t.string "bank_account_number", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.virtual "code", type: :string, as: "('EMP-'::text || lpad((id)::text, GREATEST(5, length((id)::text)), '0'::text))", stored: true
+    t.index ["code"], name: "index_employees_on_code", unique: true
     t.index ["country_id"], name: "index_employees_on_country_id"
     t.index ["department"], name: "index_employees_on_department"
     t.index ["email"], name: "index_employees_on_email", unique: true

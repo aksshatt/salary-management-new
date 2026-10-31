@@ -20,3 +20,11 @@ export function timelineData(revisions) {
     .sort((a, b) => a.effective_on.localeCompare(b.effective_on))
     .map((revision) => ({ date: revision.effective_on, value: Number(revision.amount), currency: revision.currency_code }))
 }
+
+export function raiseData(points) {
+  return points.map((point) => ({
+    month: point.month,
+    raises: point.raises,
+    average: point.average_raise_percent === null ? null : Number(point.average_raise_percent),
+  }))
+}
