@@ -2,6 +2,7 @@ import { Button, Card, Descriptions, Result, Space, Statistic, Table, Tag, Typog
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import AddRevisionModal from './AddRevisionModal.jsx'
 import EditEmployeeModal from './EditEmployeeModal.jsx'
+import EmployeeHistory from './EmployeeHistory.jsx'
 import { useParams } from 'react-router'
 import { apiFetch } from './api.js'
 import { formatChange, formatMoney, formatSalaryWithUsd } from './format.js'
@@ -102,6 +103,7 @@ export default function EmployeeDetailPage() {
         </Suspense>
         <Table rowKey="id" columns={REVISION_COLUMNS} dataSource={employee.salary_revisions} pagination={false} />
       </section>
+      <EmployeeHistory employeeId={employee.id} reloadKey={employee} />
       <EditEmployeeModal
         employee={employee}
         open={editing}
