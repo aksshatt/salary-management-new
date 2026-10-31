@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatMoney, formatSalaryWithUsd } from './format.js'
+import { formatChange, formatMoney, formatSalaryWithUsd } from './format.js'
 
 describe('formatMoney', () => {
   it('formats an API money string with its currency symbol and 2 decimals', () => {
@@ -22,5 +22,16 @@ describe('formatSalaryWithUsd', () => {
   it('shows just the amount for USD salaries or when there is no rate', () => {
     expect(formatSalaryWithUsd({ amount: '80000.00', currency_code: 'USD', usd: '80000.00' })).toBe('$80,000.00')
     expect(formatSalaryWithUsd({ amount: '1000.00', currency_code: 'INR', usd: null })).toBe('₹1,000.00')
+  })
+})
+
+describe('formatChange', () => {
+  it('shows a sign for rises and drops, and a dash when there is no comparison', () => {
+    expect([formatChange('10.00'), formatChange('-1.50'), formatChange('0.00'), formatChange(null)]).toEqual([
+      '+10.00%',
+      '−1.50%',
+      '0.00%',
+      '—',
+    ])
   })
 })

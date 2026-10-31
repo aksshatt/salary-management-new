@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { costTrendData, donutData, movementData } from './chartData.js'
+import { costTrendData, donutData, movementData, timelineData } from './chartData.js'
 
 describe('donutData', () => {
   it('turns the cost breakdown into chart slices, skipping groups with no cost', () => {
@@ -33,6 +33,20 @@ describe('movementData', () => {
       { month: '2026-08', type: 'Leavers', count: 0 },
       { month: '2026-09', type: 'Joiners', count: 2 },
       { month: '2026-09', type: 'Leavers', count: 1 },
+    ])
+  })
+})
+
+describe('timelineData', () => {
+  it('lists salaries oldest first with their currency, for a step chart', () => {
+    expect(
+      timelineData([
+        { id: 2, effective_on: '2025-04-01', amount: '1320000.50', currency_code: 'INR' },
+        { id: 1, effective_on: '2024-01-15', amount: '1200000.00', currency_code: 'INR' },
+      ]),
+    ).toEqual([
+      { date: '2024-01-15', value: 1200000, currency: 'INR' },
+      { date: '2025-04-01', value: 1320000.5, currency: 'INR' },
     ])
   })
 })
