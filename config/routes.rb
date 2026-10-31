@@ -9,6 +9,7 @@ Rails.application.routes.draw do
       resource :termination, only: %i[create]
     end
     resource :filter_options, only: %i[show]
+    resources :countries, only: %i[index update]
     resources :exchange_rates, only: %i[index update], param: :currency_code
     resource :insights, only: %i[show] do
       get :trends
