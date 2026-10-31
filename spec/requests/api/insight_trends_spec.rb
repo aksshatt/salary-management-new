@@ -29,8 +29,14 @@ RSpec.describe "API insight trends", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(json["points"].size).to eq(12)
-    expect(json["points"].first).to eq("month" => "2025-10", "as_of" => "2025-10-31", "monthly_cost" => nil, "joiners" => 0, "leavers" => 0)
-    expect(json["points"].last).to eq("month" => "2026-09", "as_of" => "2026-09-30", "monthly_cost" => "1000.00", "joiners" => 1, "leavers" => 0)
+    expect(json["points"].first).to eq(
+      "month" => "2025-10", "as_of" => "2025-10-31", "monthly_cost" => nil, "joiners" => 0, "leavers" => 0,
+      "raises" => 0, "average_raise_percent" => nil
+    )
+    expect(json["points"].last).to eq(
+      "month" => "2026-09", "as_of" => "2026-09-30", "monthly_cost" => "1000.00", "joiners" => 1, "leavers" => 0,
+      "raises" => 0, "average_raise_percent" => nil
+    )
   end
 
   it "uses the chosen month and returns 422 for a future one" do
@@ -50,5 +56,16 @@ RSpec.describe "API insight trends", type: :request do
     27.times { hire(salary: 1_000, joined_on: Date.new(2026, 1, 1)) }
 
     expect(count_queries { get "/api/insights/trends" }).to eq(few)
+  end
+
+  it "sends the average raise as a percentage string" do
+    employee = create(:employee, country: usa, joined_on: Date.new(2024, 1, 1))
+    create(:salary_revision, employee:, effective_on: Date.new(2024, 1, 1), amount: 1000)
+    create(:salary_revision, employee:, effective_on: Date.new(2026, 9, 1), amount: 1075, reason: "increment")
+    log_in(create(:user))
+
+    get "/api/insights/trends"
+
+    expect(json["points"].last).to include("raises" => 1, "average_raise_percent" => "7.50")
   end
 end
