@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   namespace :api do
     resource :session, only: %i[show create destroy]
     resources :employees, only: %i[index show create update] do
+      get :export, on: :collection
       resources :salary_revisions, only: %i[create]
       resource :termination, only: %i[create]
     end

@@ -18,3 +18,8 @@ export function employeeQueryString(query) {
   const search = params.toString()
   return search ? `?${search}` : ''
 }
+
+// The CSV export takes the same filters but always covers every page.
+export function employeeExportUrl(query) {
+  return `/api/employees/export.csv${employeeQueryString({ ...query, page: 1 })}`
+}

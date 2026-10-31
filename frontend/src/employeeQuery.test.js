@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
+import { employeeExportUrl, employeeQueryString, parseEmployeeQuery } from './employeeQuery.js'
 
 describe('parseEmployeeQuery', () => {
   it('defaults to no filters on page 1', () => {
@@ -42,5 +42,14 @@ describe('employeeQueryString', () => {
     const query = { q: 'nair', country_id: '3', department: '', job_title: 'Account Manager', status: 'active', page: 4 }
 
     expect(parseEmployeeQuery(employeeQueryString(query))).toEqual(query)
+  })
+})
+
+describe('employeeExportUrl', () => {
+  it('exports with the current search and filters, but every page', () => {
+    const query = { q: 'nair', country_id: '3', department: '', job_title: '', status: 'active', page: 4 }
+
+    expect(employeeExportUrl(query)).toBe('/api/employees/export.csv?q=nair&country_id=3&status=active')
+    expect(employeeExportUrl({ ...query, q: '', country_id: '', status: '' })).toBe('/api/employees/export.csv')
   })
 })
