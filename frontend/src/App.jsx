@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import('./DashboardPage.jsx'))
 const EmployeesPage = lazy(() => import('./EmployeesPage.jsx'))
 const EmployeeDetailPage = lazy(() => import('./EmployeeDetailPage.jsx'))
 const CurrenciesPage = lazy(() => import('./CurrenciesPage.jsx'))
+const CountriesPage = lazy(() => import('./CountriesPage.jsx'))
 
 export default function App() {
   const { status, user, login, logout } = useSession()
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/employees/:id" element={<EmployeeDetailPage />} />
           <Route path="/currencies" element={<CurrenciesPage />} />
+          <Route path="/countries" element={<CountriesPage />} />
           <Route path="/" element={<DashboardPage />} />
         </Routes>
       </Suspense>

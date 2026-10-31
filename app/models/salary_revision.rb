@@ -8,7 +8,7 @@ class SalaryRevision < ApplicationRecord
   validates :effective_on, uniqueness: { scope: :employee_id, message: "already has a revision on this date" }
   validates :amount, numericality: { greater_than: 0, less_than_or_equal_to: 1_000_000_000 }, allow_nil: true
 
-  validate :amount_has_at_most_two_decimals
+  validates :amount, decimal_places: 2
   validate :effective_within_employment
 
   before_create { self.currency_code = employee&.country&.currency_code }
@@ -34,14 +34,6 @@ class SalaryRevision < ApplicationRecord
   end
 
   private
-    # The decimal(12,2) column rounds on assignment, so check what was entered.
-    def amount_has_at_most_two_decimals
-      entered = BigDecimal(amount_before_type_cast.to_s, exception: false)
-      return if entered.nil? || entered == entered.round(2)
-
-      errors.add(:amount, "can have at most 2 decimal places")
-    end
-
     def effective_within_employment
       return if effective_on.nil? || employee.nil?
 

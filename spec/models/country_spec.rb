@@ -33,4 +33,26 @@ RSpec.describe Country do
     expect(country).not_to be_valid
     expect(country.errors[:currency_code]).to include("has no exchange rate")
   end
+
+  describe "tax rate" do
+    it "accepts a percentage from 0 to 100" do
+      expect([ build(:country, tax_rate_percent: 0), build(:country, tax_rate_percent: 100), build(:country, tax_rate_percent: "12.5") ])
+        .to all(be_valid)
+    end
+
+    it "rejects a missing rate, one outside 0 to 100, or more than 2 decimals" do
+      [ nil, "-0.01", "100.01" ].each do |rate|
+        expect(build(:country, tax_rate_percent: rate)).not_to be_valid, "expected #{rate.inspect} to be rejected"
+      end
+      country = build(:country, tax_rate_percent: "12.345")
+      expect(country).not_to be_valid
+      expect(country.errors[:tax_rate_percent]).to include("can have at most 2 decimal places")
+    end
+
+    it "is required and kept between 0 and 100 by the database" do
+      expect { build(:country, tax_rate_percent: nil).save(validate: false) }.to raise_error(ActiveRecord::NotNullViolation)
+      expect { build(:country, tax_rate_percent: 101).save(validate: false) }
+        .to raise_error(ActiveRecord::StatementInvalid, /countries_tax_rate_range/)
+    end
+  end
 end

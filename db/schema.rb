@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_31_071110) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_31_073714) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,7 +19,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_071110) do
     t.string "currency_code", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "tax_rate_percent", precision: 5, scale: 2, null: false
     t.index ["name"], name: "index_countries_on_name", unique: true
+    t.check_constraint "tax_rate_percent >= 0::numeric AND tax_rate_percent <= 100::numeric", name: "countries_tax_rate_range"
   end
 
   create_table "employees", force: :cascade do |t|
