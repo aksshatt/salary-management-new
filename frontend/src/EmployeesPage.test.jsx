@@ -219,4 +219,14 @@ describe('EmployeesPage', () => {
     expect(within(dialog).getByText('must be less than or equal to 1000000000')).toBeTruthy()
     expect(screen.getByTestId('path').textContent).toBe('/employees')
   })
+
+  it('offers a CSV export of the filtered list', async () => {
+    stubApi()
+    renderAt('/employees?department=Sales&page=3')
+    await screen.findByText('Priya Nair')
+
+    const link = screen.getByRole('link', { name: /Export CSV/ })
+
+    expect(link.getAttribute('href')).toBe('/api/employees/export.csv?department=Sales')
+  })
 })
