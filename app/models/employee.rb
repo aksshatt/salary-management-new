@@ -10,6 +10,12 @@ class Employee < ApplicationRecord
   scope :upcoming, -> { where("joined_on > ?", Date.current) }
   scope :terminated, -> { where("terminated_on < ?", Date.current) }
 
+  # Part of the name or code, ignoring case; % and _ are plain characters.
+  scope :search, ->(text) {
+    pattern = "%#{sanitize_sql_like(text.to_s.strip)}%"
+    where("employees.name ILIKE :q OR employees.code ILIKE :q", q: pattern)
+  }
+
   normalizes :email, with: ->(email) { email.strip.downcase }
   normalizes :bank_account_number, with: ->(number) { number.gsub(/\s+/, "").upcase }
 

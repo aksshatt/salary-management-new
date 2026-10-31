@@ -54,4 +54,33 @@ RSpec.describe PayrollEntry do
     expect { september.update!(bonus: 100) }.to raise_error(ActiveRecord::ReadOnlyRecord)
     expect(october.update!(bonus: 100)).to be(true)
   end
+
+  describe "#adjust" do
+    let(:entry) do
+      create(:payroll_entry, annual_salary: 120_000, tax_rate_percent: 25, days_worked: 30, days_in_month: 30,
+        monthly_gross: 10_000, tax: 2_500, net: 7_500)
+    end
+
+    it "recalculates tax and net from the entry's own stored inputs" do
+      create(:salary_revision, employee: entry.employee, effective_on: entry.employee.joined_on + 10, amount: 999_999, reason: "increment")
+
+      expect(entry.adjust(bonus: "1000", deduction: "300", note: "Spot award")).to be(true)
+      expect(entry.reload).to have_attributes(
+        monthly_gross: 10_000, bonus: 1000, deduction: 300, note: "Spot award", tax: 2_750, net: 7_950
+      )
+    end
+
+    it "flags a negative net, which is allowed for loan recovery" do
+      entry.adjust(bonus: "0", deduction: "8000", note: "Advance recovery")
+
+      expect(entry.reload).to have_attributes(net: -500, negative_net?: true)
+    end
+
+    it "changes nothing when the input is invalid, and limits notes to 500 characters" do
+      expect(entry.adjust(bonus: "-1", deduction: "0", note: nil)).to be(false)
+      expect(entry.adjust(bonus: "0", deduction: "0", note: "x" * 501)).to be(false)
+      expect(entry.errors[:note]).to include("is too long (maximum is 500 characters)")
+      expect(entry.reload).to have_attributes(bonus: 0, net: 7_500, note: nil)
+    end
+  end
 end
