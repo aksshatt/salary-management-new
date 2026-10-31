@@ -22,11 +22,14 @@ module Api
       employee = Employee.includes(:country).find(params[:id])
       current = employee.current_revision
       revisions = employee.salary_revisions.order(effective_on: :desc)
+      changes = SalaryRevision.change_percents(revisions)
 
       render json: {
         employee: employee_json(employee).merge(
           current_salary: current && current_salary_detail_json(current),
-          salary_revisions: revisions.map { |revision| revision_json(revision) }
+          salary_revisions: revisions.map do |revision|
+            revision_json(revision).merge(change_percent: changes[revision.id] && format_percent(changes[revision.id]))
+          end
         )
       }
     end
