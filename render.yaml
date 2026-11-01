@@ -21,6 +21,9 @@ services:
       - key: HR_PASSWORD
         sync: false
 
+      - key: SEED_EMPLOYEES
+        value: "1000"
+
 databases:
   - name: salary-management-db
     plan: free
